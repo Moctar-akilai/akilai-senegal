@@ -5,7 +5,11 @@ import {
   telechargerMediaTwilio,
   validerSignatureTwilio,
 } from "@/lib/whatsapp/twilio";
-import { genererReponseAssistant, type ParametresAssistant } from "@/lib/whatsapp/assistant";
+import {
+  genererReponseAssistant,
+  transcrireAudio,
+  type ParametresAssistant,
+} from "@/lib/whatsapp/assistant";
 
 export const runtime = "nodejs";
 
@@ -121,17 +125,22 @@ export async function POST(request: NextRequest) {
     const contentType = params.MediaContentType0 ?? "";
     if (mediaUrl && contentType.startsWith("audio/")) {
       typeMessage = "audio";
+      let transcription: string | null = null;
       try {
         const { buffer, contentType: typeReel } = await telechargerMediaTwilio(mediaUrl);
-        const chemin = `${gestionnaireId}/${contactId}/${Date.now()}.${extensionPourType(typeReel)}`;
+        const extension = extensionPourType(typeReel);
+        const chemin = `${gestionnaireId}/${contactId}/${Date.now()}.${extension}`;
         const { error: erreurUpload } = await supabase.storage
           .from("audios-whatsapp")
           .upload(chemin, buffer, { contentType: typeReel, upsert: false });
         if (!erreurUpload) audioUrl = chemin;
+
+        transcription = await transcrireAudio(buffer, typeReel, `audio.${extension}`);
       } catch {
-        // Le message est tout de même enregistré, sans audio récupérable.
+        // Le message est tout de même enregistré, sans audio récupérable
+        // ni transcription.
       }
-      contenuEntrant = corpsMessage || "(message vocal — transcription non disponible)";
+      contenuEntrant = corpsMessage || transcription || "(message vocal — transcription non disponible)";
     }
   }
 

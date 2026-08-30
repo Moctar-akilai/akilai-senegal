@@ -1,7 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
-const anthropic = new Anthropic();
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5";
+const openai = new OpenAI();
+const MODEL = "gpt-4o";
 
 export type ParametresAssistant = {
   assistant_nom: string;
@@ -67,30 +68,48 @@ export async function genererReponseAssistant(
   contactNom: string | null,
   historique: MessageHistorique[]
 ): Promise<string> {
-  const messages: Anthropic.MessageParam[] = historique
+  const messagesHistorique: ChatCompletionMessageParam[] = historique
     .filter((m) => m.contenu && m.contenu.trim().length > 0)
     .map((m) => ({
       role: m.direction === "entrant" ? ("user" as const) : ("assistant" as const),
-      content: m.type_message === "audio" ? `[message vocal] ${m.contenu}` : m.contenu!,
+      content: m.contenu!,
     }));
 
-  if (messages.length === 0 || messages[0].role !== "user") {
-    // L'API exige que le premier message soit "user".
-    messages.unshift({ role: "user", content: "(Bonjour)" });
-  }
+  const messages: ChatCompletionMessageParam[] = [
+    { role: "system", content: construireSystemPrompt(parametres, contactNom) },
+    ...messagesHistorique,
+  ];
 
-  const response = await anthropic.messages.create({
+  const completion = await openai.chat.completions.create({
     model: MODEL,
     max_tokens: 500,
-    system: construireSystemPrompt(parametres, contactNom),
-    output_config: { effort: "low" },
     messages,
   });
 
-  if (response.stop_reason === "refusal") {
+  const choix = completion.choices[0];
+  if (choix?.finish_reason === "content_filter") {
     return "Désolé, je ne peux pas répondre à cette demande. Un membre de l'équipe reviendra vers vous rapidement.";
   }
 
-  const texte = response.content.find((b): b is Anthropic.TextBlock => b.type === "text")?.text;
-  return texte?.trim() || "Désolé, je n'ai pas bien compris. Pouvez-vous reformuler ?";
+  return choix?.message?.content?.trim() || "Désolé, je n'ai pas bien compris. Pouvez-vous reformuler ?";
+}
+
+// Transcrit un message vocal WhatsApp via Whisper (OpenAI) pour que
+// l'assistant puisse réagir au contenu réel plutôt qu'à un texte de
+// remplacement.
+export async function transcrireAudio(
+  buffer: Buffer,
+  contentType: string,
+  nomFichier: string
+): Promise<string | null> {
+  try {
+    const fichier = new File([new Uint8Array(buffer)], nomFichier, { type: contentType });
+    const transcription = await openai.audio.transcriptions.create({
+      file: fichier,
+      model: "whisper-1",
+    });
+    return transcription.text?.trim() || null;
+  } catch {
+    return null;
+  }
 }
