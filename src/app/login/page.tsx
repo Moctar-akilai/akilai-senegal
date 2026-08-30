@@ -40,8 +40,15 @@ export default function LoginPage() {
           nom,
           telephone,
         });
-        if (profilError) setErreur(profilError.message);
-        else router.push("/dashboard");
+        if (profilError) {
+          setErreur(profilError.message);
+        } else {
+          const { error: parametresError } = await supabase
+            .from("parametres_compte")
+            .insert({ gestionnaire_id: data.user.id });
+          if (parametresError) setErreur(parametresError.message);
+          else router.push("/dashboard");
+        }
       }
     }
     setChargement(false);
@@ -53,7 +60,9 @@ export default function LoginPage() {
         <h1 className="mb-1 text-xl font-semibold text-neutral-900">
           {mode === "connexion" ? "Connexion" : "Créer un compte"}
         </h1>
-        <p className="mb-6 text-sm text-neutral-500">Gestion locative simplifiée</p>
+        <p className="mb-6 text-sm text-neutral-500">
+          AkilAI — l&apos;assistant WhatsApp de votre entreprise
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "inscription" && (
