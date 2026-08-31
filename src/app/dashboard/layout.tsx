@@ -54,7 +54,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Link>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 pb-4">
+        <nav className="nav-scroll flex-1 overflow-y-auto px-3 pb-4">
           <NavLinks />
         </nav>
 
