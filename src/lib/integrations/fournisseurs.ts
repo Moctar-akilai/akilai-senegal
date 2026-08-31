@@ -129,7 +129,7 @@ export const CATEGORIES_INTEGRATIONS: Categorie[] = [
         id: "google_sheets",
         nom: "Google Sheets",
         initiales: "GS",
-        logo: "/logos/google-sheets.png",
+        logo: "/logos/google-sheet.png",
         methode: "cle_api",
         aide: {
           texte: "Où trouver ma clé de compte de service Google Sheets",
@@ -159,7 +159,7 @@ export const CATEGORIES_INTEGRATIONS: Categorie[] = [
         id: "teams",
         nom: "Teams",
         initiales: "TE",
-        logo: "/logos/teams.png",
+        logo: "/logos/microsoft-teams.png",
         methode: "oauth_bientot",
       },
       {
