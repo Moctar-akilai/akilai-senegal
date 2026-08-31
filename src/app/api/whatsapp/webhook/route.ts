@@ -71,12 +71,13 @@ export async function POST(request: NextRequest) {
   const nbMedias = Number(params.NumMedia ?? "0");
 
   if (!from || !to) {
+    console.error("[webhook] Requête sans From/To exploitable, params reçus:", params);
     return twiml();
   }
 
   const supabase = createServiceClient();
 
-  const { data: parametres } = await supabase
+  const { data: parametres, error: erreurParametres } = await supabase
     .from("parametres_compte")
     .select(
       "gestionnaire_id, assistant_whatsapp_actif, assistant_nom, assistant_prompt, assistant_ton, outil_faq_actif, outil_prise_rdv_actif, outil_transfert_humain_actif, outil_infos_pratiques_actif"
@@ -87,6 +88,11 @@ export async function POST(request: NextRequest) {
   // Numéro non configuré côté AkilAI : on ne peut pas savoir à quel
   // compte router ce message.
   if (!parametres) {
+    console.error(
+      "[webhook] Aucun parametres_compte trouvé pour le numéro entrant To=",
+      to,
+      erreurParametres ? `(erreur Supabase: ${erreurParametres.message})` : "(aucune ligne ne correspond)"
+    );
     return twiml();
   }
 
@@ -118,6 +124,14 @@ export async function POST(request: NextRequest) {
       .select("id, nom")
       .single();
     if (erreurContact || !nouveauContact) {
+      console.error(
+        "[webhook] Échec de la création du contact pour gestionnaire_id=",
+        gestionnaireId,
+        "telephone=",
+        from,
+        ":",
+        erreurContact
+      );
       return twiml();
     }
     contactId = nouveauContact.id;
@@ -145,9 +159,19 @@ export async function POST(request: NextRequest) {
         if (!erreurUpload) audioUrl = chemin;
 
         transcription = await transcrireAudio(buffer, typeReel, `audio.${extension}`);
-      } catch {
+      } catch (erreurAudio) {
         // Le message est tout de même enregistré, sans audio récupérable
         // ni transcription.
+        console.error(
+          "[webhook] Échec du traitement du média audio (téléchargement/upload) pour gestionnaire_id=",
+          gestionnaireId,
+          "contact_id=",
+          contactId,
+          "mediaUrl=",
+          mediaUrl,
+          ":",
+          erreurAudio
+        );
       }
       contenuEntrant = corpsMessage || transcription || "(message vocal — transcription non disponible)";
     }
@@ -163,6 +187,11 @@ export async function POST(request: NextRequest) {
   });
 
   if (!parametres.assistant_whatsapp_actif) {
+    console.error(
+      "[webhook] assistant_whatsapp_actif=false pour gestionnaire_id=",
+      gestionnaireId,
+      "— aucune réponse ne sera envoyée (comportement attendu si l'assistant est désactivé côté dashboard)."
+    );
     return twiml();
   }
 
@@ -170,21 +199,45 @@ export async function POST(request: NextRequest) {
   // WhatsApp" de ce gestionnaire : si elle est active et qu'on est hors
   // des jours/heures autorisés, on répond un message par défaut au lieu
   // d'appeler GPT-4o.
-  const { data: automatisation } = await supabase
+  const { data: automatisation, error: erreurAutomatisation } = await supabase
     .from("automatisations")
     .select("id")
     .eq("gestionnaire_id", gestionnaireId)
     .eq("type", "whatsapp")
     .maybeSingle();
 
+  if (erreurAutomatisation) {
+    console.error(
+      "[webhook] Échec de la lecture de l'automatisation 'whatsapp' pour gestionnaire_id=",
+      gestionnaireId,
+      ":",
+      erreurAutomatisation
+    );
+  }
+
   if (automatisation) {
-    const { data: programmation } = await supabase
+    const { data: programmation, error: erreurProgrammation } = await supabase
       .from("programmations")
       .select("jours_actifs, heure_debut, heure_fin, actif")
       .eq("automatisation_id", automatisation.id)
       .maybeSingle();
 
+    if (erreurProgrammation) {
+      console.error(
+        "[webhook] Échec de la lecture de la programmation pour automatisation_id=",
+        automatisation.id,
+        ":",
+        erreurProgrammation
+      );
+    }
+
     if (programmation && !estDansPlageAutorisee(programmation)) {
+      console.error(
+        "[webhook] Hors plage horaire autorisée pour gestionnaire_id=",
+        gestionnaireId,
+        "— envoi du message hors-horaires au lieu d'appeler l'assistant. programmation:",
+        programmation
+      );
       await supabase.from("conversations_whatsapp").insert({
         gestionnaire_id: gestionnaireId,
         contact_id: contactId,
@@ -212,17 +265,50 @@ export async function POST(request: NextRequest) {
       contactNom,
       historiqueChronologique
     );
-  } catch {
+  } catch (erreurAssistant) {
+    // C'est le point le plus probable d'échec silencieux : n'importe quelle
+    // erreur ici (clé OPENAI_API_KEY manquante/invalide, quota dépassé,
+    // erreur réseau, etc.) faisait auparavant retourner un TwiML vide sans
+    // aucune trace — Twilio répond alors 200 mais n'envoie aucun message,
+    // ce qui ressemble exactement à un "silence total" côté WhatsApp.
+    console.error(
+      "[webhook] Échec de genererReponseAssistant pour gestionnaire_id=",
+      gestionnaireId,
+      "contact_id=",
+      contactId,
+      ":",
+      erreurAssistant
+    );
     return twiml();
   }
 
-  await supabase.from("conversations_whatsapp").insert({
+  console.log(
+    "[webhook] Réponse assistant générée avec succès pour gestionnaire_id=",
+    gestionnaireId,
+    "contact_id=",
+    contactId,
+    "longueur=",
+    reponse.length
+  );
+
+  const { error: erreurInsertionSortant } = await supabase.from("conversations_whatsapp").insert({
     gestionnaire_id: gestionnaireId,
     contact_id: contactId,
     direction: "sortant",
     type_message: "texte",
     contenu: reponse,
   });
+
+  if (erreurInsertionSortant) {
+    console.error(
+      "[webhook] Échec de l'enregistrement du message sortant en base pour gestionnaire_id=",
+      gestionnaireId,
+      "contact_id=",
+      contactId,
+      "— le TwiML sera tout de même renvoyé à Twilio:",
+      erreurInsertionSortant
+    );
+  }
 
   return twiml(reponse);
 }

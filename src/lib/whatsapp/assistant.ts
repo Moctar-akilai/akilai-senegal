@@ -91,15 +91,38 @@ export async function genererReponseAssistant(
     ...messagesHistorique,
   ];
 
-  const completion = await getOpenAIClient().chat.completions.create({
-    model: MODEL,
-    max_tokens: 500,
-    messages,
-  });
+  let completion;
+  try {
+    completion = await getOpenAIClient().chat.completions.create({
+      model: MODEL,
+      max_tokens: 500,
+      messages,
+    });
+  } catch (erreur) {
+    console.error(
+      "[assistant] Échec de l'appel OpenAI chat.completions.create (modèle:",
+      MODEL,
+      ", nb messages historique:",
+      messagesHistorique.length,
+      "):",
+      erreur
+    );
+    throw erreur;
+  }
 
   const choix = completion.choices[0];
   if (choix?.finish_reason === "content_filter") {
+    console.error("[assistant] Réponse OpenAI bloquée par le content filter.");
     return "Désolé, je ne peux pas répondre à cette demande. Un membre de l'équipe reviendra vers vous rapidement.";
+  }
+
+  if (!choix?.message?.content?.trim()) {
+    console.error(
+      "[assistant] Réponse OpenAI vide ou inattendue, finish_reason:",
+      choix?.finish_reason,
+      "completion complète:",
+      JSON.stringify(completion)
+    );
   }
 
   return choix?.message?.content?.trim() || "Désolé, je n'ai pas bien compris. Pouvez-vous reformuler ?";
@@ -120,7 +143,15 @@ export async function transcrireAudio(
       model: "whisper-1",
     });
     return transcription.text?.trim() || null;
-  } catch {
+  } catch (erreur) {
+    console.error(
+      "[assistant] Échec de la transcription audio Whisper (fichier:",
+      nomFichier,
+      ", contentType:",
+      contentType,
+      "):",
+      erreur
+    );
     return null;
   }
 }
