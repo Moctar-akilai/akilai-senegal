@@ -9,6 +9,8 @@ const LIENS = [
   { href: "/dashboard/messages", label: "WhatsApp" },
   { href: "/dashboard/whatsapp-ia", label: "WhatsApp & IA" },
   { href: "/dashboard/programmation", label: "Programmation" },
+  { href: "/dashboard/integrations", label: "Intégrations" },
+  { href: "/dashboard/agenda", label: "Agenda" },
   { href: "/dashboard/parametres", label: "Paramètres" },
 ];
 
