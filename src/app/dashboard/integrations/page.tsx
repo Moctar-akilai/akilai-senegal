@@ -1,7 +1,15 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import { CATEGORIES_INTEGRATIONS, type StatutIntegration } from "@/lib/integrations/fournisseurs";
+import { dechiffrerCleApi, apercuMasqueCleApi } from "@/lib/integrations/chiffrement";
 import { IntegrationCard } from "./IntegrationCard";
+import { LogoAvecRepli } from "./LogoAvecRepli";
+
+type LigneIntegration = {
+  statut: StatutIntegration;
+  apercu: string | null;
+  messageErreur: string | null;
+};
 
 export default async function IntegrationsPage() {
   // ⚠️ Auth temporairement contournée — client service_role (contourne le
@@ -12,12 +20,34 @@ export default async function IntegrationsPage() {
 
   const { data: integrations } = await supabase
     .from("integrations")
-    .select("fournisseur, statut")
+    .select("fournisseur, statut, cle_api_chiffree, message_erreur")
     .eq("gestionnaire_id", user.id);
 
-  const statutParFournisseur = new Map<string, StatutIntegration>(
-    (integrations ?? []).map((i) => [i.fournisseur, i.statut as StatutIntegration])
-  );
+  // L'aperçu masqué est calculé ici, côté serveur (Server Component) : la
+  // clé n'est déchiffrée que le temps de produire un aperçu tronqué, jamais
+  // envoyée en clair au navigateur. Les lignes sans cle_api_chiffree
+  // (ex. celles créées par le bascule "dev") n'ont simplement pas d'aperçu.
+  const donneesParFournisseur = new Map<string, LigneIntegration>();
+  for (const i of integrations ?? []) {
+    let apercu: string | null = null;
+    if (i.cle_api_chiffree) {
+      try {
+        apercu = apercuMasqueCleApi(dechiffrerCleApi(i.cle_api_chiffree));
+      } catch (erreur) {
+        console.error(
+          "[integrations] Échec du déchiffrement pour fournisseur=",
+          i.fournisseur,
+          ":",
+          erreur
+        );
+      }
+    }
+    donneesParFournisseur.set(i.fournisseur, {
+      statut: i.statut as StatutIntegration,
+      apercu,
+      messageErreur: i.message_erreur,
+    });
+  }
 
   return (
     <div className="space-y-8">
@@ -29,9 +59,11 @@ export default async function IntegrationsPage() {
         </h2>
         <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-700">
-              WA
-            </div>
+            <LogoAvecRepli
+              src="/logos/whatsapp.png"
+              initiales="WA"
+              repliClassName="bg-green-100 text-green-700"
+            />
             <div>
               <p className="text-sm font-medium text-neutral-900">WhatsApp</p>
               <p className="text-xs text-neutral-500">Canal natif de la plateforme</p>
@@ -49,15 +81,23 @@ export default async function IntegrationsPage() {
             {categorie.titre}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            {categorie.fournisseurs.map((f) => (
-              <IntegrationCard
-                key={f.id}
-                fournisseur={f.id}
-                nom={f.nom}
-                initiales={f.initiales}
-                statutInitial={statutParFournisseur.get(f.id) ?? "non_connecte"}
-              />
-            ))}
+            {categorie.fournisseurs.map((f) => {
+              const donnees = donneesParFournisseur.get(f.id);
+              return (
+                <IntegrationCard
+                  key={f.id}
+                  fournisseur={f.id}
+                  nom={f.nom}
+                  initiales={f.initiales}
+                  logo={f.logo}
+                  methode={f.methode}
+                  aide={f.aide}
+                  statutInitial={donnees?.statut ?? "non_connecte"}
+                  apercuInitial={donnees?.apercu ?? null}
+                  messageErreurInitial={donnees?.messageErreur ?? null}
+                />
+              );
+            })}
           </div>
         </section>
       ))}

@@ -275,7 +275,13 @@ export async function POST(request: Request) {
       if (!estString(body.fournisseur)) return erreur("Requête invalide.");
       const { error: err } = await supabase
         .from("integrations")
-        .update({ statut: "non_connecte", connecte_le: null })
+        .update({
+          statut: "non_connecte",
+          connecte_le: null,
+          cle_api_chiffree: null,
+          derniere_verification: null,
+          message_erreur: null,
+        })
         .eq("gestionnaire_id", gestionnaire.id)
         .eq("fournisseur", body.fournisseur);
       if (err) return erreur(err.message, 500);
