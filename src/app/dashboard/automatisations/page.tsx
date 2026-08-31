@@ -1,8 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
-import { AutomatisationCard, type LogMessage } from "./AutomatisationCard";
-
-const NB_LOGS = 10;
+import { AutomatisationCard } from "./AutomatisationCard";
 
 export default async function AutomatisationsPage() {
   // ⚠️ Auth temporairement contournée — client service_role (contourne le
@@ -11,41 +9,23 @@ export default async function AutomatisationsPage() {
   const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
-  const { data: automatisations } = await supabase
-    .from("automatisations")
-    .select("id, nom, type, statut, description")
-    .eq("gestionnaire_id", user.id)
-    .order("created_at", { ascending: true });
-
-  // Les logs proviennent de conversations_whatsapp, qui n'est pas liée à
-  // une automatisation précise (pas de colonne automatisation_id) : on ne
-  // peut les rattacher qu'aux automatisations de type "whatsapp", seule
-  // source de messages disponible pour l'instant.
-  const logsParAutomatisation = new Map<string, LogMessage[]>();
-  for (const auto of automatisations ?? []) {
-    if (auto.type !== "whatsapp") continue;
-    const { data: messages } = await supabase
-      .from("conversations_whatsapp")
-      .select("id, direction, contenu, created_at, contacts(nom, telephone)")
+  const [{ data: automatisations }, { data: parametresCompte }] = await Promise.all([
+    supabase
+      .from("automatisations")
+      .select("id, nom, type, statut")
       .eq("gestionnaire_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(NB_LOGS);
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("parametres_compte")
+      .select("assistant_nom")
+      .eq("gestionnaire_id", user.id)
+      .maybeSingle(),
+  ]);
 
-    logsParAutomatisation.set(
-      auto.id,
-      (messages ?? []).map((m) => {
-        const contact = Array.isArray(m.contacts) ? m.contacts[0] : m.contacts;
-        return {
-          id: m.id,
-          direction: m.direction,
-          contenu: m.contenu,
-          created_at: m.created_at,
-          contactNom: contact?.nom ?? null,
-          contactTelephone: contact?.telephone ?? "",
-        };
-      })
-    );
-  }
+  // L'automatisation "Assistant WhatsApp" affiche le nom configuré par le
+  // gestionnaire (parametres_compte.assistant_nom) plutôt que son nom
+  // générique en base, avec "Assistant" en repli si non renseigné.
+  const nomAssistant = parametresCompte?.assistant_nom?.trim() || "Assistant";
 
   return (
     <div className="space-y-6">
@@ -62,10 +42,8 @@ export default async function AutomatisationsPage() {
           <AutomatisationCard
             key={auto.id}
             id={auto.id}
-            nom={auto.nom}
-            description={auto.description}
+            nom={auto.type === "whatsapp" ? nomAssistant : auto.nom}
             statutInitial={auto.statut as "actif" | "inactif" | "erreur"}
-            logs={logsParAutomatisation.get(auto.id) ?? []}
           />
         ))}
       </div>

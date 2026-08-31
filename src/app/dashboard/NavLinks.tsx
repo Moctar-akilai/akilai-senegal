@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 const LIENS = [
   { href: "/dashboard", label: "Vue d'ensemble" },
   { href: "/dashboard/automatisations", label: "Automatisations" },
-  { href: "/dashboard/messages", label: "WhatsApp" },
-  { href: "/dashboard/whatsapp-ia", label: "WhatsApp & IA" },
+  { href: "/dashboard/messages", label: "Historique de conversation" },
+  { href: "/dashboard/whatsapp-ia", label: "Configuration assistant" },
   { href: "/dashboard/programmation", label: "Programmation" },
   { href: "/dashboard/integrations", label: "Intégrations" },
   { href: "/dashboard/agenda", label: "Agenda" },
