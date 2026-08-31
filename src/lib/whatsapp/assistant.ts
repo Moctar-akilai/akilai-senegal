@@ -1,8 +1,19 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
-const openai = new OpenAI();
 const MODEL = "gpt-4o";
+
+// Le client n'est instancié qu'au premier appel réel (jamais au chargement
+// du module) : Next.js exécute le module au moment du build ("Collecting
+// page data"), où OPENAI_API_KEY n'est pas garantie disponible. Un
+// `new OpenAI()` au niveau du module ferait échouer le build avec
+// "Missing credentials" même quand la clé est bien configurée à l'exécution.
+let openai: OpenAI | null = null;
+
+function getOpenAIClient() {
+  if (!openai) openai = new OpenAI();
+  return openai;
+}
 
 export type ParametresAssistant = {
   assistant_nom: string;
@@ -80,7 +91,7 @@ export async function genererReponseAssistant(
     ...messagesHistorique,
   ];
 
-  const completion = await openai.chat.completions.create({
+  const completion = await getOpenAIClient().chat.completions.create({
     model: MODEL,
     max_tokens: 500,
     messages,
@@ -104,7 +115,7 @@ export async function transcrireAudio(
 ): Promise<string | null> {
   try {
     const fichier = new File([new Uint8Array(buffer)], nomFichier, { type: contentType });
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await getOpenAIClient().audio.transcriptions.create({
       file: fichier,
       model: "whisper-1",
     });
