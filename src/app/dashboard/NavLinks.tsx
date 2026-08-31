@@ -11,6 +11,8 @@ const LIENS = [
   { href: "/dashboard/programmation", label: "Programmation" },
   { href: "/dashboard/integrations", label: "Intégrations" },
   { href: "/dashboard/agenda", label: "Agenda" },
+  { href: "/dashboard/crm", label: "CRM" },
+  { href: "/dashboard/tickets", label: "Tickets" },
   { href: "/dashboard/parametres", label: "Paramètres" },
 ];
 
