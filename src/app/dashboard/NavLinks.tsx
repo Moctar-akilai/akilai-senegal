@@ -13,6 +13,7 @@ const LIENS = [
   { href: "/dashboard/agenda", label: "Agenda" },
   { href: "/dashboard/crm", label: "CRM" },
   { href: "/dashboard/tickets", label: "Tickets" },
+  { href: "/dashboard/factures", label: "Mes factures" },
   { href: "/dashboard/parametres", label: "Paramètres" },
 ];
 
