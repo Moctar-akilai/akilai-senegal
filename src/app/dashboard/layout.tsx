@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import { NavLinks } from "./NavLinks";
@@ -49,8 +50,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen bg-sable">
       <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col bg-indigo-profond">
         <div className="px-6 py-6">
-          <Link href="/dashboard" className="font-display text-xl font-bold text-blanc-casse">
-            AkilAI
+          <Link href="/dashboard" className="block">
+            <Image
+              src="/logo-akilai-clair.png"
+              alt="AkilAI"
+              width={400}
+              height={100}
+              priority
+              className="h-8 w-auto"
+            />
           </Link>
         </div>
 
