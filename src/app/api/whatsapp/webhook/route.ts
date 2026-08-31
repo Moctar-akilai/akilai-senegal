@@ -15,6 +15,14 @@ export const runtime = "nodejs";
 
 const NB_MESSAGES_CONTEXTE = 20;
 
+// Répond au webhook avec du TwiML plutôt qu'un appel explicite à l'API
+// Twilio. Twilio envoie alors le message en réponse depuis le numéro exact
+// qui a reçu le message entrant (le "To" de la requête), vers son
+// expéditeur — sans qu'on ait besoin de connaître ni de spécifier de "From"
+// nous-mêmes. C'est ce qui permet à un même compte AkilAI de gérer
+// plusieurs numéros WhatsApp Business sans configuration globale : il n'y a
+// aucune dépendance à une variable d'environnement de type
+// TWILIO_WHATSAPP_FROM dans ce fichier.
 function twiml(corps?: string) {
   const message = corps ? `<Message>${escapeXml(corps)}</Message>` : "";
   return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><Response>${message}</Response>`, {

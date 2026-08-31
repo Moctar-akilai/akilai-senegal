@@ -2,7 +2,14 @@ import twilio from "twilio";
 
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-// Le numéro WhatsApp Twilio doit être au format "whatsapp:+14155238886"
+// Numéro d'envoi unique hérité de l'ancien produit (gestion locative),
+// utilisé uniquement par envoyerMessageWhatsApp ci-dessous pour les
+// quittances/relances (src/lib/whatsapp/notifications.ts, non utilisées par
+// AkilAI). Le webhook AkilAI (src/app/api/whatsapp/webhook/route.ts) ne
+// passe pas par cette fonction : il répond via TwiML, qui utilise
+// automatiquement le numéro WhatsApp Business exact du compte concerné
+// (le "To" du message entrant) — un seul numéro global n'aurait plus de
+// sens puisque chaque gestionnaire a le sien (parametres_compte.numero_whatsapp).
 const FROM = process.env.TWILIO_WHATSAPP_FROM!;
 
 function toWhatsApp(numero: string) {
@@ -14,6 +21,8 @@ export function numeroSansPrefixeWhatsApp(numero: string) {
   return numero.replace(/^whatsapp:/, "");
 }
 
+// Utilisée uniquement par le flux hérité (quittances/relances) — le
+// webhook AkilAI ne l'appelle pas, voir le commentaire sur FROM ci-dessus.
 export async function envoyerMessageWhatsApp(numeroDestinataire: string, corps: string) {
   return client.messages.create({
     from: FROM,
