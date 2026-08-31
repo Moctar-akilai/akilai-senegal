@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 import { JOURS_SEMAINE } from "@/lib/automatisations/programmation";
 
 type Programmation = {
@@ -29,7 +29,6 @@ export function ProgrammationForm({
   automatisations: { id: string; nom: string }[];
   programmationsParAutomatisation: Record<string, Programmation | null>;
 }) {
-  const supabase = createClient();
   const [automatisationId, setAutomatisationId] = useState(automatisations[0]?.id ?? "");
 
   function programmationInitiale(id: string): Programmation {
@@ -72,21 +71,21 @@ export function ProgrammationForm({
     setChargement(true);
     setMessage(null);
 
-    const { error } = await supabase.from("programmations").upsert(
-      {
-        automatisation_id: automatisationId,
-        jours_actifs: programmation.jours_actifs,
-        heure_debut: programmation.heure_debut,
-        heure_fin: programmation.heure_fin,
-        actif: programmation.actif,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "automatisation_id" }
-    );
+    // ⚠️ Contournement temporaire de l'authentification — écrit via
+    // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+    // tant que le bypass est actif. Voir le commentaire en haut de cette
+    // route API.
+    const resultat = await ecrireDashboard("programmation.save", {
+      automatisationId,
+      joursActifs: programmation.jours_actifs,
+      heureDebut: programmation.heure_debut,
+      heureFin: programmation.heure_fin,
+      actif: programmation.actif,
+    });
 
     setMessage(
-      error
-        ? { type: "erreur", texte: error.message }
+      !resultat.ok
+        ? { type: "erreur", texte: resultat.error }
         : { type: "succes", texte: "Programmation enregistrée." }
     );
     setChargement(false);

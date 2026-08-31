@@ -51,7 +51,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           AkilAI
         </Link>
         <div className="flex items-center gap-4">
-          <NotificationBell gestionnaireId={user.id} notificationsInitiales={notifications ?? []} />
+          <NotificationBell notificationsInitiales={notifications ?? []} />
           <span className="text-sm text-neutral-600">{nom}</span>
           <form action="/api/auth/logout" method="post">
             <button className="text-sm text-neutral-500 hover:text-neutral-900">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 
 export type NotificationDashboard = {
   id: string;
@@ -27,24 +27,25 @@ function formatRelatif(date: string) {
 }
 
 export function NotificationBell({
-  gestionnaireId,
   notificationsInitiales,
 }: {
-  gestionnaireId: string;
   notificationsInitiales: NotificationDashboard[];
 }) {
-  const supabase = createClient();
   const router = useRouter();
   const [ouvert, setOuvert] = useState(false);
   const [notifications, setNotifications] = useState(notificationsInitiales);
 
   const nonLues = notifications.filter((n) => !n.lu).length;
 
+  // ⚠️ Contournement temporaire de l'authentification — écrit via
+  // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+  // tant que le bypass est actif. Voir le commentaire en haut de cette
+  // route API.
   async function ouvrirNotification(n: NotificationDashboard) {
     setOuvert(false);
     if (!n.lu) {
       setNotifications((liste) => liste.map((x) => (x.id === n.id ? { ...x, lu: true } : x)));
-      await supabase.from("notifications").update({ lu: true }).eq("id", n.id);
+      await ecrireDashboard("notification.markRead", { id: n.id });
     }
     if (n.lien) router.push(n.lien);
     router.refresh();
@@ -52,23 +53,19 @@ export function NotificationBell({
 
   async function toutMarquerLu() {
     setNotifications((liste) => liste.map((n) => ({ ...n, lu: true })));
-    await supabase
-      .from("notifications")
-      .update({ lu: true })
-      .eq("gestionnaire_id", gestionnaireId)
-      .eq("lu", false);
+    await ecrireDashboard("notification.markAllRead", {});
     router.refresh();
   }
 
   async function supprimer(id: string) {
     setNotifications((liste) => liste.filter((n) => n.id !== id));
-    await supabase.from("notifications").delete().eq("id", id);
+    await ecrireDashboard("notification.delete", { id });
     router.refresh();
   }
 
   async function viderTout() {
     setNotifications([]);
-    await supabase.from("notifications").delete().eq("gestionnaire_id", gestionnaireId);
+    await ecrireDashboard("notification.deleteAll", {});
     router.refresh();
   }
 

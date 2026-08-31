@@ -26,7 +26,6 @@ export default async function WhatsappIAPage() {
 
       {parametresCompte ? (
         <WhatsappIAForm
-          gestionnaireId={user.id}
           numeroWhatsapp={parametresCompte.numero_whatsapp}
           parametresInitiaux={{
             assistant_nom: parametresCompte.assistant_nom,

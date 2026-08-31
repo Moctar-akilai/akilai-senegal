@@ -79,7 +79,7 @@ export default async function CrmPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-neutral-900">CRM</h1>
-        <NouveauContactModal gestionnaireId={user.id} />
+        <NouveauContactModal />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

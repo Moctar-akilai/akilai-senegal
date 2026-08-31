@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 
 type Statut = "actif" | "inactif" | "erreur";
 
@@ -53,18 +53,21 @@ export function AutomatisationCard({
   statutInitial: Statut;
   logs: LogMessage[];
 }) {
-  const supabase = createClient();
   const [statut, setStatut] = useState<Statut>(statutInitial);
   const [chargement, setChargement] = useState(false);
 
   async function basculer() {
-    const nouveauStatut: Statut = statut === "actif" ? "inactif" : "actif";
+    const nouveauStatut: "actif" | "inactif" = statut === "actif" ? "inactif" : "actif";
     setChargement(true);
-    const { error } = await supabase
-      .from("automatisations")
-      .update({ statut: nouveauStatut })
-      .eq("id", id);
-    if (!error) setStatut(nouveauStatut);
+    // ⚠️ Contournement temporaire de l'authentification — écrit via
+    // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+    // tant que le bypass est actif. Voir le commentaire en haut de cette
+    // route API.
+    const resultat = await ecrireDashboard("automatisation.setStatut", {
+      id,
+      statut: nouveauStatut,
+    });
+    if (resultat.ok) setStatut(nouveauStatut);
     setChargement(false);
   }
 

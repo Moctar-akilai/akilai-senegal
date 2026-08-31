@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 import { ModaleAVenir } from "../ModaleAVenir";
 import type { Fournisseur, StatutIntegration } from "@/lib/integrations/fournisseurs";
 
@@ -24,50 +24,43 @@ const CYCLE_DEV: Record<StatutIntegration, StatutIntegration> = {
 };
 
 export function IntegrationCard({
-  gestionnaireId,
   fournisseur,
   nom,
   initiales,
   statutInitial,
 }: {
-  gestionnaireId: string;
   fournisseur: Fournisseur;
   nom: string;
   initiales: string;
   statutInitial: StatutIntegration;
 }) {
-  const supabase = createClient();
   const [statut, setStatut] = useState<StatutIntegration>(statutInitial);
   const [chargement, setChargement] = useState(false);
   const [modaleOuverte, setModaleOuverte] = useState(false);
 
+  // ⚠️ Contournement temporaire de l'authentification — écrit via
+  // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+  // tant que le bypass est actif. Voir le commentaire en haut de cette
+  // route API.
   async function deconnecter() {
     setChargement(true);
-    const { error } = await supabase
-      .from("integrations")
-      .update({ statut: "non_connecte", connecte_le: null })
-      .eq("gestionnaire_id", gestionnaireId)
-      .eq("fournisseur", fournisseur);
-    if (!error) setStatut("non_connecte");
+    const resultat = await ecrireDashboard("integration.disconnect", { fournisseur });
+    if (resultat.ok) setStatut("non_connecte");
     setChargement(false);
   }
 
   // Réservé au développement — jamais affiché en production (la vérif est
   // évaluée au build et le bloc est éliminé du bundle de prod). Permet de
-  // simuler chaque statut pour tester l'UI sans vrai flux OAuth.
+  // simuler chaque statut pour tester l'UI sans vrai flux OAuth. La route
+  // API revérifie aussi NODE_ENV côté serveur (défense en profondeur).
   async function basculerStatutDev() {
     const nouveauStatut = CYCLE_DEV[statut];
     setChargement(true);
-    const { error } = await supabase.from("integrations").upsert(
-      {
-        gestionnaire_id: gestionnaireId,
-        fournisseur,
-        statut: nouveauStatut,
-        connecte_le: nouveauStatut === "connecte" ? new Date().toISOString() : null,
-      },
-      { onConflict: "gestionnaire_id,fournisseur" }
-    );
-    if (!error) setStatut(nouveauStatut);
+    const resultat = await ecrireDashboard("integration.devToggle", {
+      fournisseur,
+      nouveauStatut,
+    });
+    if (resultat.ok) setStatut(nouveauStatut);
     setChargement(false);
   }
 

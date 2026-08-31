@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 
 // Ajoute un message du gestionnaire (auteur='client') au fil du ticket de
 // support. C'est un dialogue interne à la plateforme entre le gestionnaire
 // et l'équipe support AkilAI — aucun envoi externe (pas de WhatsApp) ici.
 export function TicketReplyForm({ ticketId }: { ticketId: string }) {
-  const supabase = createClient();
   const router = useRouter();
   const [contenu, setContenu] = useState("");
   const [chargement, setChargement] = useState(false);
@@ -20,14 +19,17 @@ export function TicketReplyForm({ ticketId }: { ticketId: string }) {
     setChargement(true);
     setErreur(null);
 
-    const { error } = await supabase.from("ticket_messages").insert({
-      ticket_id: ticketId,
-      auteur: "client",
+    // ⚠️ Contournement temporaire de l'authentification — écrit via
+    // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+    // tant que le bypass est actif. Voir le commentaire en haut de cette
+    // route API.
+    const resultat = await ecrireDashboard("ticket.addMessage", {
+      ticketId,
       contenu: contenu.trim(),
     });
 
-    if (error) {
-      setErreur(error.message);
+    if (!resultat.ok) {
+      setErreur(resultat.error);
       setChargement(false);
       return;
     }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 import { PRIORITE_TICKET_LABEL, type PrioriteTicket } from "@/lib/crm/statuts";
 
 const PRIORITES: PrioriteTicket[] = ["basse", "normale", "haute", "urgente"];
@@ -17,19 +17,22 @@ export function TicketPrioriteForm({
   ticketId: string;
   prioriteInitiale: PrioriteTicket;
 }) {
-  const supabase = createClient();
   const router = useRouter();
   const [priorite, setPriorite] = useState(prioriteInitiale);
   const [message, setMessage] = useState<string | null>(null);
 
+  // ⚠️ Contournement temporaire de l'authentification — écrit via
+  // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+  // tant que le bypass est actif. Voir le commentaire en haut de cette
+  // route API.
   async function changerPriorite(nouvellePriorite: PrioriteTicket) {
     setPriorite(nouvellePriorite);
     setMessage(null);
-    const { error } = await supabase
-      .from("tickets")
-      .update({ priorite: nouvellePriorite, updated_at: new Date().toISOString() })
-      .eq("id", ticketId);
-    setMessage(error ? error.message : "Enregistré.");
+    const resultat = await ecrireDashboard("ticket.updatePriorite", {
+      id: ticketId,
+      priorite: nouvellePriorite,
+    });
+    setMessage(!resultat.ok ? resultat.error : "Enregistré.");
     router.refresh();
   }
 

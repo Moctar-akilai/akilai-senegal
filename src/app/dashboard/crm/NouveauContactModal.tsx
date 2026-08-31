@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 
 type Statut = "prospect" | "contacte" | "client" | "inactif";
 
-export function NouveauContactModal({ gestionnaireId }: { gestionnaireId: string }) {
-  const supabase = createClient();
+export function NouveauContactModal() {
   const router = useRouter();
   const [ouvert, setOuvert] = useState(false);
   const [nom, setNom] = useState("");
@@ -32,8 +31,12 @@ export function NouveauContactModal({ gestionnaireId }: { gestionnaireId: string
     setChargement(true);
     setErreur(null);
 
-    const { error } = await supabase.from("contacts").insert({
-      gestionnaire_id: gestionnaireId,
+    // ⚠️ Contournement temporaire de l'authentification — écrit via
+    // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+    // tant que le bypass est actif. Voir le commentaire en haut de cette
+    // route API. Le gestionnaire cible vient de getGestionnaireActuel()
+    // côté serveur, pas d'un id transmis par le client.
+    const resultat = await ecrireDashboard("contact.create", {
       nom: nom.trim() || null,
       telephone: telephone.trim(),
       email: email.trim() || null,
@@ -41,8 +44,8 @@ export function NouveauContactModal({ gestionnaireId }: { gestionnaireId: string
       notes: notes.trim() || null,
     });
 
-    if (error) {
-      setErreur(error.message);
+    if (!resultat.ok) {
+      setErreur(resultat.error);
       setChargement(false);
       return;
     }

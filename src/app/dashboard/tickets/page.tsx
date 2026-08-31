@@ -53,7 +53,6 @@ export default async function TicketsPage({
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-neutral-900">Tickets</h1>
         <NouveauTicketModal
-          gestionnaireId={user.id}
           automatisations={(automatisations ?? []).map((a) => ({ id: a.id, label: a.nom }))}
         />
       </div>

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 
 export function SecuriteForm() {
-  const supabase = createClient();
   const [motDePasse, setMotDePasse] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [message, setMessage] = useState<{ type: "succes" | "erreur"; texte: string } | null>(
@@ -22,13 +21,21 @@ export function SecuriteForm() {
     }
 
     setChargement(true);
-    const { error } = await supabase.auth.updateUser({ password: motDePasse });
+    // ⚠️ Contournement temporaire de l'authentification — sans vraie
+    // session, supabase.auth.updateUser() côté navigateur n'a personne à
+    // mettre à jour. Passe par /api/dashboard/write, qui utilise l'API
+    // admin de Supabase Auth (auth.admin.updateUserById, disponible avec
+    // service_role) pour changer le mot de passe du compte de test ciblé
+    // par getGestionnaireActuel(). Voir le commentaire en haut de cette
+    // route API.
+    const resultat = await ecrireDashboard("compte.updatePassword", { motDePasse });
+
     setMessage(
-      error
-        ? { type: "erreur", texte: error.message }
+      !resultat.ok
+        ? { type: "erreur", texte: resultat.error }
         : { type: "succes", texte: "Mot de passe mis à jour." }
     );
-    if (!error) {
+    if (resultat.ok) {
       setMotDePasse("");
       setConfirmation("");
     }

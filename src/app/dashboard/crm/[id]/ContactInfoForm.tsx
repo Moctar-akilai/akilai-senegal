@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 import { STATUT_CONTACT_LABEL, type StatutContact } from "@/lib/crm/statuts";
 
 const STATUTS: StatutContact[] = ["prospect", "contacte", "client", "inactif"];
@@ -16,7 +16,6 @@ export function ContactInfoForm({
   statutInitial: StatutContact;
   notesInitial: string;
 }) {
-  const supabase = createClient();
   const router = useRouter();
   const [statut, setStatut] = useState(statutInitial);
   const [notes, setNotes] = useState(notesInitial);
@@ -24,25 +23,29 @@ export function ContactInfoForm({
   const [messageNotes, setMessageNotes] = useState<string | null>(null);
   const [chargementNotes, setChargementNotes] = useState(false);
 
+  // ⚠️ Contournement temporaire de l'authentification — écrit via
+  // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+  // tant que le bypass est actif. Voir le commentaire en haut de cette
+  // route API.
   async function changerStatut(nouveauStatut: StatutContact) {
     setStatut(nouveauStatut);
     setMessageStatut(null);
-    const { error } = await supabase
-      .from("contacts")
-      .update({ statut: nouveauStatut })
-      .eq("id", contactId);
-    setMessageStatut(error ? error.message : "Statut mis à jour.");
+    const resultat = await ecrireDashboard("contact.updateStatut", {
+      id: contactId,
+      statut: nouveauStatut,
+    });
+    setMessageStatut(!resultat.ok ? resultat.error : "Statut mis à jour.");
     router.refresh();
   }
 
   async function enregistrerNotes() {
     setChargementNotes(true);
     setMessageNotes(null);
-    const { error } = await supabase
-      .from("contacts")
-      .update({ notes: notes.trim() || null })
-      .eq("id", contactId);
-    setMessageNotes(error ? error.message : "Notes enregistrées.");
+    const resultat = await ecrireDashboard("contact.updateNotes", {
+      id: contactId,
+      notes: notes.trim() || null,
+    });
+    setMessageNotes(!resultat.ok ? resultat.error : "Notes enregistrées.");
     setChargementNotes(false);
   }
 

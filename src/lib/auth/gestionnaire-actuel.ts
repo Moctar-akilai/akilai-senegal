@@ -22,6 +22,15 @@
 // explicitement dans chaque requête (.eq("gestionnaire_id", ...)) plutôt que
 // de compter sur RLS.
 //
+// Même piège côté écritures : les composants client (formulaires, toggles,
+// création de ressources) ne peuvent pas non plus compter sur RLS sans
+// session réelle. Comme la clé service_role ne doit jamais être exposée au
+// navigateur, ils passent par src/app/api/dashboard/write/route.ts, une
+// route API qui utilise createServiceClient() côté serveur avec
+// gestionnaire_id venant de getGestionnaireActuel() (jamais une valeur
+// fournie par le client). Voir le commentaire en haut de ce fichier de
+// route pour le détail des actions couvertes.
+//
 // Pour réactiver l'authentification normale :
 //   1. Dans src/middleware.ts, retirer le court-circuit et restaurer la
 //      redirection vers /login pour les routes /dashboard/* sans session.
@@ -34,7 +43,12 @@
 //      .eq("gestionnaire_id", ...) explicites peuvent rester : ils ne
 //      changent rien de mal une fois RLS actif, en plus d'être une bonne
 //      pratique de défense en profondeur.
-//   4. Supprimer ce fichier.
+//   4. Côté écritures, remplacer chaque appel à ecrireDashboard() par un
+//      appel direct au client anon (@/lib/supabase/client) — ou mieux,
+//      migrer vers des Server Actions / routes API classiques utilisant
+//      auth.getUser() côté serveur — puis supprimer
+//      src/app/api/dashboard/write/route.ts et src/lib/dashboard/ecrire.ts.
+//   5. Supprimer ce fichier.
 // ============================================================================
 
 // ⚠️ UUID de test codé en dur — compte de test réel (Mohamed Diop),

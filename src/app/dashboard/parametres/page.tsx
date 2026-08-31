@@ -22,7 +22,6 @@ export default async function ParametresPage() {
       <section>
         <h2 className="mb-4 text-lg font-medium text-neutral-900">Mon compte</h2>
         <CompteForm
-          userId={user.id}
           nomInitial={profil?.nom ?? ""}
           telephoneInitial={profil?.telephone ?? ""}
           numeroWhatsappInitial={parametresCompte?.numero_whatsapp ?? null}

@@ -52,7 +52,6 @@ export default async function IntegrationsPage() {
             {categorie.fournisseurs.map((f) => (
               <IntegrationCard
                 key={f.id}
-                gestionnaireId={user.id}
                 fournisseur={f.id}
                 nom={f.nom}
                 initiales={f.initiales}

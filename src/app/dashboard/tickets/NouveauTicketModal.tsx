@@ -2,19 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 import type { PrioriteTicket } from "@/lib/crm/statuts";
 
 type Option = { id: string; label: string };
 
-export function NouveauTicketModal({
-  gestionnaireId,
-  automatisations,
-}: {
-  gestionnaireId: string;
-  automatisations: Option[];
-}) {
-  const supabase = createClient();
+export function NouveauTicketModal({ automatisations }: { automatisations: Option[] }) {
   const router = useRouter();
   const [ouvert, setOuvert] = useState(false);
   const [titre, setTitre] = useState("");
@@ -37,20 +30,19 @@ export function NouveauTicketModal({
     setChargement(true);
     setErreur(null);
 
-    const { data, error } = await supabase
-      .from("tickets")
-      .insert({
-        gestionnaire_id: gestionnaireId,
-        automatisation_id: automatisationId || null,
-        titre: titre.trim(),
-        description: description.trim() || null,
-        priorite,
-      })
-      .select("id")
-      .single();
+    // ⚠️ Contournement temporaire de l'authentification — écrit via
+    // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+    // tant que le bypass est actif. Voir le commentaire en haut de cette
+    // route API.
+    const resultat = await ecrireDashboard<{ id: string }>("ticket.create", {
+      titre: titre.trim(),
+      description: description.trim() || null,
+      automatisationId: automatisationId || null,
+      priorite,
+    });
 
-    if (error || !data) {
-      setErreur(error?.message ?? "Impossible de créer le ticket.");
+    if (!resultat.ok) {
+      setErreur(resultat.error);
       setChargement(false);
       return;
     }
@@ -58,7 +50,7 @@ export function NouveauTicketModal({
     setChargement(false);
     setOuvert(false);
     reinitialiser();
-    router.push(`/dashboard/tickets/${data.id}`);
+    router.push(`/dashboard/tickets/${resultat.data.id}`);
   }
 
   return (

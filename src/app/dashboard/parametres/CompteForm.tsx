@@ -1,20 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 
 export function CompteForm({
-  userId,
   nomInitial,
   telephoneInitial,
   numeroWhatsappInitial,
 }: {
-  userId: string;
   nomInitial: string;
   telephoneInitial: string;
   numeroWhatsappInitial: string | null;
 }) {
-  const supabase = createClient();
   const [nom, setNom] = useState(nomInitial);
   const [telephone, setTelephone] = useState(telephoneInitial);
   const [numeroWhatsapp, setNumeroWhatsapp] = useState(numeroWhatsappInitial ?? "");
@@ -28,18 +25,20 @@ export function CompteForm({
     setChargement(true);
     setMessage(null);
 
-    const [{ error: erreurProfil }, { error: erreurParametres }] = await Promise.all([
-      supabase.from("profils").update({ nom, telephone }).eq("id", userId),
-      supabase
-        .from("parametres_compte")
-        .update({ numero_whatsapp: numeroWhatsapp.trim() || null })
-        .eq("gestionnaire_id", userId),
-    ]);
+    // ⚠️ Contournement temporaire de l'authentification — écrit via
+    // /api/dashboard/write (service_role côté serveur) au lieu du client
+    // Supabase anon, RLS-bloqué tant que le bypass est actif. Voir le
+    // commentaire en haut de cette route API. userId n'est pas transmis :
+    // le gestionnaire cible vient de getGestionnaireActuel() côté serveur.
+    const resultat = await ecrireDashboard("compte.update", {
+      nom,
+      telephone,
+      numeroWhatsapp: numeroWhatsapp.trim() || null,
+    });
 
-    const erreur = erreurProfil || erreurParametres;
     setMessage(
-      erreur
-        ? { type: "erreur", texte: erreur.message }
+      !resultat.ok
+        ? { type: "erreur", texte: resultat.error }
         : { type: "succes", texte: "Informations mises à jour." }
     );
     setChargement(false);

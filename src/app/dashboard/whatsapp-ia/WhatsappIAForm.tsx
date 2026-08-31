@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 
 type ParametresAssistant = {
   assistant_nom: string;
@@ -30,15 +30,12 @@ const OUTILS_ACTIFS: {
 const OUTILS_A_VENIR = ["Google Calendar", "Calendly", "CRM AkilAI"];
 
 export function WhatsappIAForm({
-  gestionnaireId,
   numeroWhatsapp,
   parametresInitiaux,
 }: {
-  gestionnaireId: string;
   numeroWhatsapp: string | null;
   parametresInitiaux: ParametresAssistant;
 }) {
-  const supabase = createClient();
   const [parametres, setParametres] = useState(parametresInitiaux);
   const [message, setMessage] = useState<{ type: "succes" | "erreur"; texte: string } | null>(
     null
@@ -54,14 +51,16 @@ export function WhatsappIAForm({
     setChargement(true);
     setMessage(null);
 
-    const { error } = await supabase
-      .from("parametres_compte")
-      .update(parametres)
-      .eq("gestionnaire_id", gestionnaireId);
+    // ⚠️ Contournement temporaire de l'authentification — écrit via
+    // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
+    // tant que le bypass est actif. Voir le commentaire en haut de cette
+    // route API. gestionnaireId n'est pas transmis : le gestionnaire cible
+    // vient de getGestionnaireActuel() côté serveur.
+    const resultat = await ecrireDashboard("assistant.update", parametres);
 
     setMessage(
-      error
-        ? { type: "erreur", texte: error.message }
+      !resultat.ok
+        ? { type: "erreur", texte: resultat.error }
         : { type: "succes", texte: "Configuration mise à jour." }
     );
     setChargement(false);
