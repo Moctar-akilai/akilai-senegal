@@ -17,11 +17,10 @@
 //   3. Supprimer ce fichier.
 // ============================================================================
 
-// ⚠️ UUID de test codé en dur — AUCUN compte réel ne correspond à cet UUID
-// pour l'instant (vérifié dans le projet Supabase "Akilai" : ni auth.users
-// ni public.profils n'ont de ligne). Remplacer par l'UUID d'un vrai compte
-// (auth.users.id / profils.id) une fois celui-ci créé.
-export const GESTIONNAIRE_ACTUEL_ID = "00000000-0000-0000-0000-000000000000";
+// ⚠️ UUID de test codé en dur — compte de test réel (Mohamed Diop),
+// vérifié dans le projet Supabase "Akilai" : auth.users, public.profils
+// et public.parametres_compte ont chacun une ligne pour cet UUID.
+export const GESTIONNAIRE_ACTUEL_ID = "26e63c82-5b7b-427d-99d2-c1ee71656dd1";
 
 export async function getGestionnaireActuel() {
   return { id: GESTIONNAIRE_ACTUEL_ID };
