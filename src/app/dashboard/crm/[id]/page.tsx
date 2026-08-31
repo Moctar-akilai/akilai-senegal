@@ -2,15 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
-import {
-  PRIORITE_TICKET_BADGE,
-  PRIORITE_TICKET_LABEL,
-  STATUT_TICKET_BADGE,
-  STATUT_TICKET_LABEL,
-  type PrioriteTicket,
-  type StatutContact,
-  type StatutTicket,
-} from "@/lib/crm/statuts";
+import { type StatutContact } from "@/lib/crm/statuts";
 import { ContactInfoForm } from "./ContactInfoForm";
 
 const NB_MESSAGES_HISTORIQUE = 10;
@@ -46,20 +38,12 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
 
   if (!contact) notFound();
 
-  const [{ data: historique }, { data: tickets }] = await Promise.all([
-    supabase
-      .from("conversations_whatsapp")
-      .select("id, direction, contenu, created_at")
-      .eq("contact_id", id)
-      .order("created_at", { ascending: false })
-      .limit(NB_MESSAGES_HISTORIQUE),
-    supabase
-      .from("tickets")
-      .select("id, titre, priorite, statut, created_at")
-      .eq("contact_id", id)
-      .eq("gestionnaire_id", user.id)
-      .order("created_at", { ascending: false }),
-  ]);
+  const { data: historique } = await supabase
+    .from("conversations_whatsapp")
+    .select("id, direction, contenu, created_at")
+    .eq("contact_id", id)
+    .order("created_at", { ascending: false })
+    .limit(NB_MESSAGES_HISTORIQUE);
 
   return (
     <div className="space-y-6">
@@ -89,7 +73,7 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
           />
         </div>
 
-        <div className="space-y-6 lg:col-span-2">
+        <div className="lg:col-span-2">
           <div className="rounded-lg border border-neutral-200 bg-white p-5">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-medium text-neutral-900">Historique WhatsApp</h2>
@@ -121,36 +105,6 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
                     <span className="shrink-0 text-xs text-neutral-400">
                       {formatDateHeure(m.created_at)}
                     </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="rounded-lg border border-neutral-200 bg-white p-5">
-            <h2 className="mb-3 text-sm font-medium text-neutral-900">Tickets</h2>
-            {!tickets || tickets.length === 0 ? (
-              <p className="text-sm text-neutral-500">Aucun ticket lié à ce contact.</p>
-            ) : (
-              <ul className="space-y-2">
-                {tickets.map((t) => (
-                  <li key={t.id}>
-                    <Link
-                      href={`/dashboard/tickets/${t.id}`}
-                      className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50"
-                    >
-                      <span className="min-w-0 flex-1 truncate text-neutral-800">{t.titre}</span>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITE_TICKET_BADGE[t.priorite as PrioriteTicket]}`}
-                      >
-                        {PRIORITE_TICKET_LABEL[t.priorite as PrioriteTicket]}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUT_TICKET_BADGE[t.statut as StatutTicket]}`}
-                      >
-                        {STATUT_TICKET_LABEL[t.statut as StatutTicket]}
-                      </span>
-                    </Link>
                   </li>
                 ))}
               </ul>

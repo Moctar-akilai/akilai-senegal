@@ -35,20 +35,15 @@ export default async function TicketsPage({
 
   let requete = supabase
     .from("tickets")
-    .select("id, titre, priorite, statut, created_at, contacts(nom, telephone), automatisations(nom)")
+    .select("id, titre, priorite, statut, created_at, automatisations(nom)")
     .eq("gestionnaire_id", user.id)
     .order("created_at", { ascending: false });
 
   if (filtreStatut) requete = requete.eq("statut", filtreStatut);
   if (filtrePriorite) requete = requete.eq("priorite", filtrePriorite);
 
-  const [{ data: tickets }, { data: contacts }, { data: automatisations }] = await Promise.all([
+  const [{ data: tickets }, { data: automatisations }] = await Promise.all([
     requete,
-    supabase
-      .from("contacts")
-      .select("id, nom, telephone")
-      .eq("gestionnaire_id", user.id)
-      .order("nom", { ascending: true }),
     supabase.from("automatisations").select("id, nom").eq("gestionnaire_id", user.id),
   ]);
 
@@ -58,7 +53,6 @@ export default async function TicketsPage({
         <h1 className="text-xl font-semibold text-neutral-900">Tickets</h1>
         <NouveauTicketModal
           gestionnaireId={user.id}
-          contacts={(contacts ?? []).map((c) => ({ id: c.id, label: c.nom || c.telephone }))}
           automatisations={(automatisations ?? []).map((a) => ({ id: a.id, label: a.nom }))}
         />
       </div>
@@ -114,7 +108,6 @@ export default async function TicketsPage({
             <thead className="border-b border-neutral-200 text-xs font-medium uppercase tracking-wide text-neutral-400">
               <tr>
                 <th className="px-4 py-3">Titre</th>
-                <th className="px-4 py-3">Contact lié</th>
                 <th className="px-4 py-3">Automatisation</th>
                 <th className="px-4 py-3">Priorité</th>
                 <th className="px-4 py-3">Statut</th>
@@ -123,7 +116,6 @@ export default async function TicketsPage({
             </thead>
             <tbody className="divide-y divide-neutral-100">
               {tickets.map((t) => {
-                const contact = Array.isArray(t.contacts) ? t.contacts[0] : t.contacts;
                 const automatisation = Array.isArray(t.automatisations)
                   ? t.automatisations[0]
                   : t.automatisations;
@@ -136,9 +128,6 @@ export default async function TicketsPage({
                       >
                         {t.titre}
                       </Link>
-                    </td>
-                    <td className="px-4 py-3 text-neutral-600">
-                      {contact ? contact.nom || contact.telephone : "—"}
                     </td>
                     <td className="px-4 py-3 text-neutral-600">{automatisation?.nom ?? "—"}</td>
                     <td className="px-4 py-3">

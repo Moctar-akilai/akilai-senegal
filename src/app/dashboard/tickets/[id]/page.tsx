@@ -10,8 +10,12 @@ import {
   type PrioriteTicket,
   type StatutTicket,
 } from "@/lib/crm/statuts";
-import { TicketStatutPrioriteForm } from "./TicketStatutPrioriteForm";
+import { TicketPrioriteForm } from "./TicketPrioriteForm";
 import { TicketReplyForm } from "./TicketReplyForm";
+
+// TODO: quand le statut d'un message 'support' est ajouté depuis le
+// backoffice, envoyer un email de notification au gestionnaire via Resend,
+// sur son email de compte.
 
 function formatHeure(date: string) {
   return new Date(date).toLocaleString("fr-FR", {
@@ -32,7 +36,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const { data: ticket } = await supabase
     .from("tickets")
     .select(
-      "id, titre, description, priorite, statut, created_at, contact_id, automatisation_id, contacts(id, nom, telephone), automatisations(id, nom)"
+      "id, titre, description, priorite, statut, created_at, automatisation_id, automatisations(id, nom)"
     )
     .eq("id", id)
     .eq("gestionnaire_id", user.id)
@@ -40,7 +44,6 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
   if (!ticket) notFound();
 
-  const contact = Array.isArray(ticket.contacts) ? ticket.contacts[0] : ticket.contacts;
   const automatisation = Array.isArray(ticket.automatisations)
     ? ticket.automatisations[0]
     : ticket.automatisations;
@@ -74,29 +77,15 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           </span>
         </div>
 
-        <div className="mb-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-neutral-600">
-          <span>
-            Contact lié :{" "}
-            {contact ? (
-              <Link href={`/dashboard/crm/${contact.id}`} className="text-neutral-900 hover:underline">
-                {contact.nom || contact.telephone}
-              </Link>
-            ) : (
-              "—"
-            )}
-          </span>
-          <span>Automatisation concernée : {automatisation?.nom ?? "—"}</span>
-        </div>
+        <p className="mb-4 text-sm text-neutral-600">
+          Automatisation concernée : {automatisation?.nom ?? "—"}
+        </p>
 
         {ticket.description && (
           <p className="mb-4 whitespace-pre-wrap text-sm text-neutral-700">{ticket.description}</p>
         )}
 
-        <TicketStatutPrioriteForm
-          ticketId={ticket.id}
-          prioriteInitiale={ticket.priorite as PrioriteTicket}
-          statutInitial={ticket.statut as StatutTicket}
-        />
+        <TicketPrioriteForm ticketId={ticket.id} prioriteInitiale={ticket.priorite as PrioriteTicket} />
       </div>
 
       <div className="rounded-lg border border-neutral-200 bg-white">
@@ -106,12 +95,12 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           )}
 
           {messages?.map((m) => {
-            const estGestionnaire = m.auteur === "gestionnaire";
+            const estClient = m.auteur === "client";
             return (
-              <div key={m.id} className={`flex flex-col ${estGestionnaire ? "items-end" : "items-start"}`}>
+              <div key={m.id} className={`flex flex-col ${estClient ? "items-end" : "items-start"}`}>
                 <div
                   className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
-                    estGestionnaire ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-900"
+                    estClient ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-900"
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{m.contenu}</p>

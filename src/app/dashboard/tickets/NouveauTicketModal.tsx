@@ -9,11 +9,9 @@ type Option = { id: string; label: string };
 
 export function NouveauTicketModal({
   gestionnaireId,
-  contacts,
   automatisations,
 }: {
   gestionnaireId: string;
-  contacts: Option[];
   automatisations: Option[];
 }) {
   const supabase = createClient();
@@ -21,7 +19,6 @@ export function NouveauTicketModal({
   const [ouvert, setOuvert] = useState(false);
   const [titre, setTitre] = useState("");
   const [description, setDescription] = useState("");
-  const [contactId, setContactId] = useState("");
   const [automatisationId, setAutomatisationId] = useState("");
   const [priorite, setPriorite] = useState<PrioriteTicket>("normale");
   const [erreur, setErreur] = useState<string | null>(null);
@@ -30,7 +27,6 @@ export function NouveauTicketModal({
   function reinitialiser() {
     setTitre("");
     setDescription("");
-    setContactId("");
     setAutomatisationId("");
     setPriorite("normale");
     setErreur(null);
@@ -45,7 +41,6 @@ export function NouveauTicketModal({
       .from("tickets")
       .insert({
         gestionnaire_id: gestionnaireId,
-        contact_id: contactId || null,
         automatisation_id: automatisationId || null,
         titre: titre.trim(),
         description: description.trim() || null,
@@ -104,23 +99,6 @@ export function NouveauTicketModal({
                   rows={3}
                   className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">
-                  Contact lié (optionnel)
-                </label>
-                <select
-                  value={contactId}
-                  onChange={(e) => setContactId(e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
-                >
-                  <option value="">Aucun</option>
-                  {contacts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-neutral-700">
