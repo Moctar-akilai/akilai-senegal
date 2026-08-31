@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 
 function formatHeure(date: string) {
   return new Date(date).toLocaleString("fr-FR", {
@@ -18,15 +19,15 @@ export default async function ConversationPage({
 }) {
   const { contactId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
+  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  const user = await getGestionnaireActuel();
 
   const { data: contact } = await supabase
     .from("contacts")
     .select("id, nom, telephone")
     .eq("id", contactId)
-    .eq("gestionnaire_id", user!.id)
+    .eq("gestionnaire_id", user.id)
     .maybeSingle();
 
   if (!contact) notFound();

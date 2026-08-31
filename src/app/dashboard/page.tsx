@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 
 function debutMoisISO() {
   const maintenant = new Date();
@@ -11,25 +12,25 @@ function ilYA7JoursISO() {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
+  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  const user = await getGestionnaireActuel();
 
   const [{ count: totalContacts }, { count: conversationsActives }, { count: messagesCeMois }] =
     await Promise.all([
       supabase
         .from("contacts")
         .select("id", { count: "exact", head: true })
-        .eq("gestionnaire_id", user!.id),
+        .eq("gestionnaire_id", user.id),
       supabase
         .from("contacts")
         .select("id", { count: "exact", head: true })
-        .eq("gestionnaire_id", user!.id)
+        .eq("gestionnaire_id", user.id)
         .gte("derniere_interaction", ilYA7JoursISO()),
       supabase
         .from("conversations_whatsapp")
         .select("id", { count: "exact", head: true })
-        .eq("gestionnaire_id", user!.id)
+        .eq("gestionnaire_id", user.id)
         .gte("created_at", debutMoisISO()),
     ]);
 

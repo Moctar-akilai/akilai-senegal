@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import { NavLinks } from "./NavLinks";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
+  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  const user = await getGestionnaireActuel();
 
   let nom = "";
   if (user) {

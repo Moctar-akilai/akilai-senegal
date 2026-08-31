@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString("fr-FR", {
@@ -19,14 +20,14 @@ export default async function MessagesPage({
   const recherche = (q ?? "").trim();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
+  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  const user = await getGestionnaireActuel();
 
   let requete = supabase
     .from("contacts")
     .select("id, nom, telephone, derniere_interaction, premiere_interaction")
-    .eq("gestionnaire_id", user!.id)
+    .eq("gestionnaire_id", user.id)
     .order("derniere_interaction", { ascending: false });
 
   if (recherche) {
