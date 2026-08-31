@@ -4,8 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LIENS = [
-  { href: "/dashboard", label: "Tableau de bord" },
-  { href: "/dashboard/messages", label: "Messages" },
+  { href: "/dashboard", label: "Vue d'ensemble" },
+  { href: "/dashboard/automatisations", label: "Automatisations" },
+  { href: "/dashboard/messages", label: "WhatsApp" },
+  { href: "/dashboard/whatsapp-ia", label: "WhatsApp & IA" },
+  { href: "/dashboard/programmation", label: "Programmation" },
   { href: "/dashboard/parametres", label: "Paramètres" },
 ];
 

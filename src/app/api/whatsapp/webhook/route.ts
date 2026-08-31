@@ -10,6 +10,7 @@ import {
   transcrireAudio,
   type ParametresAssistant,
 } from "@/lib/whatsapp/assistant";
+import { estDansPlageAutorisee, MESSAGE_HORS_HORAIRES } from "@/lib/automatisations/programmation";
 
 export const runtime = "nodejs";
 
@@ -163,6 +164,36 @@ export async function POST(request: NextRequest) {
 
   if (!parametres.assistant_whatsapp_actif) {
     return twiml();
+  }
+
+  // Vérifie la programmation horaire de l'automatisation "Assistant
+  // WhatsApp" de ce gestionnaire : si elle est active et qu'on est hors
+  // des jours/heures autorisés, on répond un message par défaut au lieu
+  // d'appeler GPT-4o.
+  const { data: automatisation } = await supabase
+    .from("automatisations")
+    .select("id")
+    .eq("gestionnaire_id", gestionnaireId)
+    .eq("type", "whatsapp")
+    .maybeSingle();
+
+  if (automatisation) {
+    const { data: programmation } = await supabase
+      .from("programmations")
+      .select("jours_actifs, heure_debut, heure_fin, actif")
+      .eq("automatisation_id", automatisation.id)
+      .maybeSingle();
+
+    if (programmation && !estDansPlageAutorisee(programmation)) {
+      await supabase.from("conversations_whatsapp").insert({
+        gestionnaire_id: gestionnaireId,
+        contact_id: contactId,
+        direction: "sortant",
+        type_message: "texte",
+        contenu: MESSAGE_HORS_HORAIRES,
+      });
+      return twiml(MESSAGE_HORS_HORAIRES);
+    }
   }
 
   const { data: historique } = await supabase

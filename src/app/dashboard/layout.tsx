@@ -35,7 +35,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </header>
       <div className="mx-auto flex max-w-6xl gap-8 px-6 py-8">
-        <nav className="w-48 shrink-0">
+        <nav className="w-56 shrink-0">
           <NavLinks />
         </nav>
         <main className="min-w-0 flex-1">{children}</main>
