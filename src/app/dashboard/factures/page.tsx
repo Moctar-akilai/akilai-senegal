@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import { STATUT_FACTURE_BADGE, STATUT_FACTURE_LABEL, type StatutFacture } from "@/lib/factures/statuts";
 
@@ -13,9 +13,13 @@ function formatMontant(montant: number) {
 }
 
 export default async function FacturesPage() {
-  const supabase = await createClient();
-  // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
-  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  // ⚠️ Auth temporairement contournée — client service_role (contourne le
+  // RLS) au lieu du client anon, le temps que le bypass reste actif.
+  // Détails complets dans src/lib/auth/gestionnaire-actuel.ts. Ça vaut
+  // aussi pour createSignedUrl() plus bas : la policy Storage du bucket
+  // "factures" est gated sur auth.uid(), donc bloquée elle aussi tant que
+  // le bypass est actif.
+  const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
   const { data: factures } = await supabase

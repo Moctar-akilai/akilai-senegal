@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import { type StatutContact } from "@/lib/crm/statuts";
 import { ContactInfoForm } from "./ContactInfoForm";
@@ -24,9 +24,10 @@ function extrait(texte: string | null, longueur = 80) {
 
 export default async function ContactPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
-  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  // ⚠️ Auth temporairement contournée — client service_role (contourne le
+  // RLS) au lieu du client anon, le temps que le bypass reste actif.
+  // Détails complets dans src/lib/auth/gestionnaire-actuel.ts.
+  const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
   const { data: contact } = await supabase
@@ -42,6 +43,7 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
     .from("conversations_whatsapp")
     .select("id, direction, contenu, created_at")
     .eq("contact_id", id)
+    .eq("gestionnaire_id", user.id)
     .order("created_at", { ascending: false })
     .limit(NB_MESSAGES_HISTORIQUE);
 

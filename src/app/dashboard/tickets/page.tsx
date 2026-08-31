@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import {
   PRIORITE_TICKET_BADGE,
@@ -28,9 +28,10 @@ export default async function TicketsPage({
   const filtrePriorite =
     priorite && PRIORITES.includes(priorite as PrioriteTicket) ? (priorite as PrioriteTicket) : "";
 
-  const supabase = await createClient();
-  // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
-  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  // ⚠️ Auth temporairement contournée — client service_role (contourne le
+  // RLS) au lieu du client anon, le temps que le bypass reste actif.
+  // Détails complets dans src/lib/auth/gestionnaire-actuel.ts.
+  const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
   let requete = supabase

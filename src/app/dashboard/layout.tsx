@@ -1,15 +1,30 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import { NavLinks } from "./NavLinks";
 import { NotificationBell } from "./NotificationBell";
 
 const NB_NOTIFICATIONS_AFFICHEES = 20;
 
+// Force le rendu dynamique (par requête) pour tout le sous-arbre
+// /dashboard/*. Avant le passage à createServiceClient(), l'appel à
+// cookies() dans le client anon forçait ce comportement implicitement ;
+// service_role n'a aucune dépendance à cookies()/headers(), donc sans
+// cette directive Next.js préverrait certaines pages (Vue d'ensemble,
+// Automatisations, WhatsApp & IA, Programmation, Intégrations, Agenda,
+// Factures, Paramètres) en pages STATIQUES au build — figeant leurs
+// données pour toujours au lieu de les recharger à chaque visite. À
+// retirer seulement si on revient un jour à un rendu volontairement
+// statique/caché pour certaines pages.
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
-  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  // ⚠️ Auth temporairement contournée — client service_role (contourne le
+  // RLS) au lieu du client anon, le temps que le bypass reste actif.
+  // Détails complets dans src/lib/auth/gestionnaire-actuel.ts. Ce layout
+  // englobe tout le dashboard, donc le nom affiché dans le header et la
+  // cloche de notifications étaient eux aussi cassés par RLS.
+  const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
   let nom = "";

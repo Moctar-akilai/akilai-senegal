@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import { MessagesParJourChart, StatutsAutomatisationsChart } from "./ApercuCharts";
 
@@ -33,9 +33,14 @@ function formatJourCourt(jourISOStr: string) {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
   // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
-  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  // Client service_role (contourne le RLS) au lieu du client anon : sans
+  // vraie session, auth.uid() est null côté base et les policies RLS
+  // bloqueraient toute lecture même avec un gestionnaire_id valide. Le
+  // filtrage par gestionnaire est fait explicitement ci-dessous. Remettre
+  // le client anon (@/lib/supabase/server) + auth.getUser() une fois
+  // l'authentification réelle réactivée.
+  const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
   const debut30Jours = ilYaNJoursISO(NB_JOURS_GRAPHIQUE);

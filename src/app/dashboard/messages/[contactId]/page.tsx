@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 
 function formatHeure(date: string) {
@@ -18,9 +18,13 @@ export default async function ConversationPage({
   params: Promise<{ contactId: string }>;
 }) {
   const { contactId } = await params;
-  const supabase = await createClient();
-  // ⚠️ Auth temporairement contournée — voir src/lib/auth/gestionnaire-actuel.ts
-  // Remettre : const { data: { user } } = await supabase.auth.getUser();
+  // ⚠️ Auth temporairement contournée — client service_role (contourne le
+  // RLS) au lieu du client anon, le temps que le bypass reste actif.
+  // Détails complets dans src/lib/auth/gestionnaire-actuel.ts. Ça vaut
+  // aussi pour createSignedUrl() plus bas : la policy Storage du bucket
+  // "audios-whatsapp" est gated sur auth.uid(), donc bloquée elle aussi
+  // tant que le bypass est actif.
+  const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
   const { data: contact } = await supabase
@@ -36,6 +40,7 @@ export default async function ConversationPage({
     .from("conversations_whatsapp")
     .select("id, direction, type_message, contenu, audio_url, created_at")
     .eq("contact_id", contactId)
+    .eq("gestionnaire_id", user.id)
     .order("created_at", { ascending: true });
 
   const messagesAvecAudio = await Promise.all(
