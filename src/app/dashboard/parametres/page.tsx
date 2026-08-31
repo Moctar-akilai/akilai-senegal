@@ -17,10 +17,10 @@ export default async function ParametresPage() {
 
   return (
     <div className="space-y-10">
-      <h1 className="text-xl font-semibold text-neutral-900">Paramètres</h1>
+      <h1 className="font-display text-2xl font-semibold text-encre">Paramètres</h1>
 
       <section>
-        <h2 className="mb-4 text-lg font-medium text-neutral-900">Mon compte</h2>
+        <h2 className="mb-4 text-lg font-medium text-encre">Mon compte</h2>
         <CompteForm
           nomInitial={profil?.nom ?? ""}
           telephoneInitial={profil?.telephone ?? ""}
@@ -29,7 +29,7 @@ export default async function ParametresPage() {
       </section>
 
       <section>
-        <h2 className="mb-4 text-lg font-medium text-neutral-900">Sécurité</h2>
+        <h2 className="mb-4 text-lg font-medium text-encre">Sécurité</h2>
         <SecuriteForm />
       </section>
     </div>

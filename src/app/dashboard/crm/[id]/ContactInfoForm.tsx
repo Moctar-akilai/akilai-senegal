@@ -52,11 +52,11 @@ export function ContactInfoForm({
   return (
     <div className="space-y-4">
       <div>
-        <label className="mb-1 block text-sm font-medium text-neutral-700">Statut</label>
+        <label className="mb-1 block text-sm font-medium text-encre">Statut</label>
         <select
           value={statut}
           onChange={(e) => changerStatut(e.target.value as StatutContact)}
-          className="w-full max-w-xs rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+          className="w-full max-w-xs rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
         >
           {STATUTS.map((s) => (
             <option key={s} value={s}>
@@ -64,28 +64,28 @@ export function ContactInfoForm({
             </option>
           ))}
         </select>
-        {messageStatut && <p className="mt-1 text-xs text-neutral-500">{messageStatut}</p>}
+        {messageStatut && <p className="mt-1 text-xs text-texte-secondaire">{messageStatut}</p>}
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-neutral-700">Notes</label>
+        <label className="mb-1 block text-sm font-medium text-encre">Notes</label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={5}
           placeholder="Notes internes sur ce contact…"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+          className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
         />
         <div className="mt-2 flex items-center gap-3">
           <button
             type="button"
             disabled={chargementNotes}
             onClick={enregistrerNotes}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+            className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile disabled:opacity-50"
           >
             {chargementNotes ? "Enregistrement..." : "Enregistrer"}
           </button>
-          {messageNotes && <p className="text-xs text-neutral-500">{messageNotes}</p>}
+          {messageNotes && <p className="text-xs text-texte-secondaire">{messageNotes}</p>}
         </div>
       </div>
     </div>

@@ -45,7 +45,7 @@ export function SecuriteForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="mb-1 block text-sm font-medium text-neutral-700">
+        <label className="mb-1 block text-sm font-medium text-encre">
           Nouveau mot de passe
         </label>
         <input
@@ -54,11 +54,11 @@ export function SecuriteForm() {
           minLength={6}
           value={motDePasse}
           onChange={(e) => setMotDePasse(e.target.value)}
-          className="w-full max-w-sm rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+          className="w-full max-w-sm rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-neutral-700">
+        <label className="mb-1 block text-sm font-medium text-encre">
           Confirmer le mot de passe
         </label>
         <input
@@ -67,12 +67,12 @@ export function SecuriteForm() {
           minLength={6}
           value={confirmation}
           onChange={(e) => setConfirmation(e.target.value)}
-          className="w-full max-w-sm rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+          className="w-full max-w-sm rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
         />
       </div>
 
       {message && (
-        <p className={`text-sm ${message.type === "erreur" ? "text-red-600" : "text-green-600"}`}>
+        <p className={`text-sm ${message.type === "erreur" ? "text-erreur" : "text-succes"}`}>
           {message.texte}
         </p>
       )}
@@ -80,7 +80,7 @@ export function SecuriteForm() {
       <button
         type="submit"
         disabled={chargement}
-        className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+        className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile disabled:opacity-50"
       >
         {chargement ? "Enregistrement..." : "Mettre à jour le mot de passe"}
       </button>

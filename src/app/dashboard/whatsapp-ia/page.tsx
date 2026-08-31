@@ -22,7 +22,7 @@ export default async function WhatsappIAPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900">WhatsApp & IA</h1>
+      <h1 className="font-display text-2xl font-semibold text-encre">WhatsApp & IA</h1>
 
       {parametresCompte ? (
         <WhatsappIAForm
@@ -39,7 +39,7 @@ export default async function WhatsappIAPage() {
           }}
         />
       ) : (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-texte-secondaire">
           Impossible de charger la configuration de l&apos;assistant.
         </p>
       )}

@@ -186,41 +186,41 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900">Vue d&apos;ensemble</h1>
+      <h1 className="font-display text-2xl font-semibold text-encre">Vue d&apos;ensemble</h1>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="rounded-lg border border-neutral-200 bg-white p-5">
-            <p className="text-sm text-neutral-500">{kpi.label}</p>
-            <p className="mt-2 text-3xl font-semibold text-neutral-900">{kpi.valeur}</p>
+          <div key={kpi.label} className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5">
+            <p className="text-sm text-texte-secondaire">{kpi.label}</p>
+            <p className="mt-2 font-display text-4xl font-semibold text-encre tabular-nums">{kpi.valeur}</p>
           </div>
         ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 lg:col-span-2">
-          <h2 className="mb-2 text-sm font-medium text-neutral-900">
+        <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5 lg:col-span-2">
+          <h2 className="mb-2 text-sm font-medium text-encre">
             Messages WhatsApp (30 jours)
           </h2>
           <MessagesParJourChart data={donneesGraphique} />
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-5">
-          <h2 className="mb-2 text-sm font-medium text-neutral-900">Statuts automatisations</h2>
+        <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5">
+          <h2 className="mb-2 text-sm font-medium text-encre">Statuts automatisations</h2>
           <StatutsAutomatisationsChart data={donneesStatuts} />
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-neutral-200 bg-white p-5">
-          <h2 className="mb-2 text-sm font-medium text-neutral-900">Résumé de la période</h2>
-          <p className="text-sm text-neutral-700">{resume}</p>
+        <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5">
+          <h2 className="mb-2 text-sm font-medium text-encre">Résumé de la période</h2>
+          <p className="text-sm text-encre">{resume}</p>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-5">
-          <h2 className="mb-2 text-sm font-medium text-neutral-900">Recommandations AkilAI</h2>
+        <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5">
+          <h2 className="mb-2 text-sm font-medium text-encre">Recommandations AkilAI</h2>
           <ul className="space-y-2">
             {recommandations.map((r) => (
-              <li key={r} className="flex gap-2 text-sm text-neutral-700">
-                <span className="text-neutral-400">•</span>
+              <li key={r} className="flex gap-2 text-sm text-encre">
+                <span className="text-texte-secondaire">•</span>
                 {r}
               </li>
             ))}

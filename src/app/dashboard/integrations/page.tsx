@@ -62,25 +62,25 @@ export default async function IntegrationsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-xl font-semibold text-neutral-900">Intégrations</h1>
+      <h1 className="font-display text-2xl font-semibold text-encre">Intégrations</h1>
 
       <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-400">
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-texte-secondaire">
           Inclus
         </h2>
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-4">
           <div className="flex min-w-0 items-center gap-3">
             <LogoAvecRepli
               src="/logos/whatsapp.png"
               initiales="WA"
-              repliClassName="bg-green-100 text-green-700"
+              repliClassName="bg-succes-pastel text-succes-pastel-texte"
             />
             <div>
-              <p className="text-sm font-medium text-neutral-900">WhatsApp</p>
-              <p className="text-xs text-neutral-500">Canal natif de la plateforme</p>
+              <p className="text-sm font-medium text-encre">WhatsApp</p>
+              <p className="text-xs text-texte-secondaire">Canal natif de la plateforme</p>
             </div>
           </div>
-          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+          <span className="rounded-full bg-succes-pastel px-2 py-0.5 text-xs font-medium text-succes-pastel-texte">
             Actif
           </span>
         </div>
@@ -88,7 +88,7 @@ export default async function IntegrationsPage() {
 
       {CATEGORIES_INTEGRATIONS.map((categorie) => (
         <section key={categorie.titre}>
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-neutral-400">
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-texte-secondaire">
             {categorie.titre}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">

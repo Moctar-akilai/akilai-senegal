@@ -9,7 +9,7 @@ import { useState } from "react";
 export function LogoAvecRepli({
   src,
   initiales,
-  repliClassName = "bg-neutral-100 text-neutral-600",
+  repliClassName = "bg-bordure text-texte-secondaire",
 }: {
   src: string;
   initiales: string;
@@ -32,7 +32,7 @@ export function LogoAvecRepli({
     <img
       src={src}
       alt=""
-      className="h-9 w-9 shrink-0 rounded-full border border-neutral-100 object-contain"
+      className="h-9 w-9 shrink-0 rounded-full border border-bordure object-contain"
       onError={() => setEnErreur(true)}
     />
   );

@@ -93,22 +93,22 @@ export function ProgrammationForm({
 
   if (automatisations.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+      <div className="rounded-lg border border-dashed border-bordure p-8 text-center text-sm text-texte-secondaire">
         Aucune automatisation à programmer pour l&apos;instant.
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg space-y-6 rounded-lg border border-neutral-200 bg-white p-5">
+    <form onSubmit={handleSubmit} className="max-w-lg space-y-6 rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5">
       <div>
-        <label className="mb-1 block text-sm font-medium text-neutral-700">
+        <label className="mb-1 block text-sm font-medium text-encre">
           Automatisation à programmer
         </label>
         <select
           value={automatisationId}
           onChange={(e) => changerAutomatisation(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+          className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
         >
           {automatisations.map((a) => (
             <option key={a.id} value={a.id}>
@@ -123,18 +123,18 @@ export function ProgrammationForm({
           type="checkbox"
           checked={programmation.actif}
           onChange={(e) => setProgrammation((p) => ({ ...p, actif: e.target.checked }))}
-          className="h-4 w-4"
+          className="h-4 w-4 accent-argile-forte"
         />
-        <span className="text-sm font-medium text-neutral-900">
+        <span className="text-sm font-medium text-encre">
           Activer une programmation horaire
         </span>
       </label>
-      <p className="-mt-4 text-xs text-neutral-500">
+      <p className="-mt-4 text-xs text-texte-secondaire">
         Si désactivé, l&apos;automatisation tourne sans restriction d&apos;horaire (24h/7j).
       </p>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-neutral-700">Jours actifs</p>
+        <p className="mb-2 text-sm font-medium text-encre">Jours actifs</p>
         <div className="flex flex-wrap gap-2">
           {JOURS_SEMAINE.map((jour) => {
             const actif = programmation.jours_actifs.includes(jour.valeur);
@@ -143,10 +143,10 @@ export function ProgrammationForm({
                 key={jour.valeur}
                 type="button"
                 onClick={() => basculerJour(jour.valeur)}
-                className={`rounded-md border px-3 py-1.5 text-sm ${
+                className={`rounded-lg border px-3 py-1.5 text-sm ${
                   actif
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-300 text-neutral-600 hover:border-neutral-400"
+                    ? "border-argile-forte bg-argile-forte text-white"
+                    : "border-bordure text-texte-secondaire hover:border-texte-secondaire"
                 }`}
               >
                 {jour.abrege}
@@ -158,27 +158,27 @@ export function ProgrammationForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-neutral-700">Heure de début</label>
+          <label className="mb-1 block text-sm font-medium text-encre">Heure de début</label>
           <input
             type="time"
             value={programmation.heure_debut}
             onChange={(e) => setProgrammation((p) => ({ ...p, heure_debut: e.target.value }))}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-neutral-700">Heure de fin</label>
+          <label className="mb-1 block text-sm font-medium text-encre">Heure de fin</label>
           <input
             type="time"
             value={programmation.heure_fin}
             onChange={(e) => setProgrammation((p) => ({ ...p, heure_fin: e.target.value }))}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
           />
         </div>
       </div>
 
       {message && (
-        <p className={`text-sm ${message.type === "erreur" ? "text-red-600" : "text-green-600"}`}>
+        <p className={`text-sm ${message.type === "erreur" ? "text-erreur" : "text-succes"}`}>
           {message.texte}
         </p>
       )}
@@ -186,7 +186,7 @@ export function ProgrammationForm({
       <button
         type="submit"
         disabled={chargement}
-        className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+        className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile disabled:opacity-50"
       >
         {chargement ? "Enregistrement..." : "Enregistrer"}
       </button>

@@ -30,36 +30,36 @@ export function EvenementModal({
       onClick={onFermer}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-6 shadow-lg"
+        className="w-full max-w-md rounded-lg border border-bordure bg-carte p-6 shadow-[var(--shadow-flottant)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-1 text-base font-semibold text-neutral-900">{evenement.titre}</h3>
-        <p className="mb-4 text-sm text-neutral-500">
+        <h3 className="mb-1 text-base font-semibold text-encre">{evenement.titre}</h3>
+        <p className="mb-4 text-sm text-texte-secondaire">
           {formatDateHeure(evenement.debut)} → {formatDateHeure(evenement.fin)}
         </p>
 
         {evenement.lieu && (
-          <p className="mb-2 text-sm text-neutral-700">
+          <p className="mb-2 text-sm text-encre">
             <span className="font-medium">Lieu : </span>
             {evenement.lieu}
           </p>
         )}
         {evenement.description && (
-          <p className="mb-4 text-sm text-neutral-700">{evenement.description}</p>
+          <p className="mb-4 text-sm text-encre">{evenement.description}</p>
         )}
 
         <div className="flex gap-2">
           <button
             type="button"
             disabled
-            className="flex-1 rounded-md border border-neutral-300 py-2 text-sm font-medium text-neutral-400"
+            className="flex-1 rounded-lg border border-bordure py-2 text-sm font-medium text-texte-secondaire"
           >
             Modifier
           </button>
           <button
             type="button"
             disabled
-            className="flex-1 rounded-md border border-neutral-300 py-2 text-sm font-medium text-neutral-400"
+            className="flex-1 rounded-lg border border-bordure py-2 text-sm font-medium text-texte-secondaire"
           >
             Supprimer
           </button>
@@ -67,7 +67,7 @@ export function EvenementModal({
         <button
           type="button"
           onClick={onFermer}
-          className="mt-3 w-full rounded-md bg-neutral-900 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+          className="mt-3 w-full rounded-lg bg-argile-forte py-2 text-sm font-medium text-white hover:bg-argile"
         >
           Fermer
         </button>

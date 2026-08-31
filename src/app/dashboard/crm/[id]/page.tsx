@@ -50,24 +50,24 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/dashboard/crm" className="text-sm text-neutral-500 hover:text-neutral-900">
+        <Link href="/dashboard/crm" className="text-sm text-texte-secondaire hover:text-encre">
           ← CRM
         </Link>
       </div>
 
       <div>
-        <h1 className="text-xl font-semibold text-neutral-900">
+        <h1 className="font-display text-2xl font-semibold text-encre">
           {contact.nom || `Contact sans nom (${contact.telephone})`}
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-texte-secondaire">
           {contact.telephone}
           {contact.email && ` · ${contact.email}`}
         </p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 lg:col-span-1">
-          <h2 className="mb-4 text-sm font-medium text-neutral-900">Informations</h2>
+        <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5 lg:col-span-1">
+          <h2 className="mb-4 text-sm font-medium text-encre">Informations</h2>
           <ContactInfoForm
             contactId={contact.id}
             statutInitial={contact.statut as StatutContact}
@@ -76,18 +76,18 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="lg:col-span-2">
-          <div className="rounded-lg border border-neutral-200 bg-white p-5">
+          <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-medium text-neutral-900">Historique WhatsApp</h2>
+              <h2 className="text-sm font-medium text-encre">Historique WhatsApp</h2>
               <Link
                 href={`/dashboard/messages/${contact.id}`}
-                className="text-xs text-neutral-500 hover:text-neutral-900"
+                className="text-xs text-texte-secondaire hover:text-encre"
               >
                 Voir la conversation complète →
               </Link>
             </div>
             {!historique || historique.length === 0 ? (
-              <p className="text-sm text-neutral-500">Aucun message échangé pour l&apos;instant.</p>
+              <p className="text-sm text-texte-secondaire">Aucun message échangé pour l&apos;instant.</p>
             ) : (
               <ul className="space-y-2">
                 {historique.map((m) => (
@@ -96,15 +96,15 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
                       <span
                         className={`mr-2 rounded-full px-2 py-0.5 text-xs ${
                           m.direction === "sortant"
-                            ? "bg-neutral-100 text-neutral-600"
-                            : "bg-blue-50 text-blue-700"
+                            ? "bg-bordure text-texte-secondaire"
+                            : "bg-neutre-pastel text-neutre-pastel-texte"
                         }`}
                       >
                         {m.direction === "sortant" ? "Envoyé" : "Reçu"}
                       </span>
-                      <span className="text-neutral-700">{extrait(m.contenu)}</span>
+                      <span className="text-encre">{extrait(m.contenu)}</span>
                     </span>
-                    <span className="shrink-0 text-xs text-neutral-400">
+                    <span className="shrink-0 text-xs text-texte-secondaire">
                       {formatDateHeure(m.created_at)}
                     </span>
                   </li>

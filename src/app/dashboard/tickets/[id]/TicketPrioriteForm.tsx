@@ -39,11 +39,11 @@ export function TicketPrioriteForm({
   return (
     <div className="flex items-center gap-3">
       <div>
-        <label className="mb-1 block text-xs font-medium text-neutral-500">Priorité</label>
+        <label className="mb-1 block text-xs font-medium text-texte-secondaire">Priorité</label>
         <select
           value={priorite}
           onChange={(e) => changerPriorite(e.target.value as PrioriteTicket)}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm outline-none focus:border-neutral-900"
+          className="rounded-lg border border-bordure px-3 py-1.5 text-sm outline-none focus:border-argile-forte"
         >
           {PRIORITES.map((p) => (
             <option key={p} value={p}>
@@ -52,7 +52,7 @@ export function TicketPrioriteForm({
           ))}
         </select>
       </div>
-      {message && <p className="text-xs text-neutral-400">{message}</p>}
+      {message && <p className="text-xs text-texte-secondaire">{message}</p>}
     </div>
   );
 }

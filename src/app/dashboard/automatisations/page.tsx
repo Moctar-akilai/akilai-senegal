@@ -29,10 +29,10 @@ export default async function AutomatisationsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900">Automatisations</h1>
+      <h1 className="font-display text-2xl font-semibold text-encre">Automatisations</h1>
 
       {(!automatisations || automatisations.length === 0) && (
-        <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+        <div className="rounded-lg border border-dashed border-bordure p-8 text-center text-sm text-texte-secondaire">
           Aucune automatisation pour l&apos;instant.
         </div>
       )}

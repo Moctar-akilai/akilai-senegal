@@ -45,26 +45,34 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .limit(NB_NOTIFICATIONS_AFFICHEES);
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <header className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-4">
-        <Link href="/dashboard" className="text-lg font-semibold text-neutral-900">
-          AkilAI
-        </Link>
-        <div className="flex items-center gap-4">
-          <NotificationBell notificationsInitiales={notifications ?? []} />
-          <span className="text-sm text-neutral-600">{nom}</span>
-          <form action="/api/auth/logout" method="post">
-            <button className="text-sm text-neutral-500 hover:text-neutral-900">
-              Se déconnecter
-            </button>
-          </form>
+    <div className="min-h-screen bg-sable">
+      <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col bg-indigo-profond">
+        <div className="px-6 py-6">
+          <Link href="/dashboard" className="font-display text-xl font-bold text-blanc-casse">
+            AkilAI
+          </Link>
         </div>
-      </header>
-      <div className="mx-auto flex max-w-6xl gap-8 px-6 py-8">
-        <nav className="w-56 shrink-0">
+        <nav className="flex-1 overflow-y-auto px-3 pb-6">
           <NavLinks />
         </nav>
-        <main className="min-w-0 flex-1">{children}</main>
+      </aside>
+
+      <div className="flex min-h-screen flex-col pl-64">
+        <header className="flex items-center justify-between border-b border-bordure bg-sable px-8 py-4">
+          <div />
+          <div className="flex items-center gap-4">
+            <NotificationBell notificationsInitiales={notifications ?? []} />
+            <span className="text-sm text-texte-secondaire">{nom}</span>
+            <form action="/api/auth/logout" method="post">
+              <button className="text-sm text-texte-secondaire transition-colors hover:text-encre">
+                Se déconnecter
+              </button>
+            </form>
+          </div>
+        </header>
+        <main className="flex-1 px-8 py-8">
+          <div className="mx-auto max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   );

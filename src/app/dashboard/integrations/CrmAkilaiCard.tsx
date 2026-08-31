@@ -26,14 +26,14 @@ export function CrmAkilaiCard({ estActifInitial }: { estActifInitial: boolean })
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-4">
       <Link href="/dashboard/crm" className="flex min-w-0 flex-1 items-center gap-3">
         <LogoAvecRepli src="/logos/crm-akilai.png" initiales="AI" />
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-neutral-900">CRM AkilAI</p>
+          <p className="truncate text-sm font-medium text-encre">CRM AkilAI</p>
           <span
             className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-              estActif ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-600"
+              estActif ? "bg-succes-pastel text-succes-pastel-texte" : "bg-bordure text-texte-secondaire"
             }`}
           >
             {estActif ? "Actif" : "Disponible"}
@@ -46,7 +46,7 @@ export function CrmAkilaiCard({ estActifInitial }: { estActifInitial: boolean })
           type="button"
           disabled={chargement}
           onClick={reactiver}
-          className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+          className="shrink-0 rounded-lg border border-bordure px-3 py-1.5 text-xs font-medium text-encre hover:bg-bordure/60 disabled:opacity-50"
         >
           {chargement ? "..." : "Réactiver comme CRM par défaut"}
         </button>

@@ -9,9 +9,9 @@ import { LogoAvecRepli } from "./LogoAvecRepli";
 import type { Fournisseur, MethodeConnexion, StatutIntegration } from "@/lib/integrations/fournisseurs";
 
 const BADGE_STYLES: Record<StatutIntegration, string> = {
-  non_connecte: "bg-neutral-100 text-neutral-600",
-  connecte: "bg-green-100 text-green-700",
-  erreur: "bg-red-100 text-red-700",
+  non_connecte: "bg-bordure text-texte-secondaire",
+  connecte: "bg-succes-pastel text-succes-pastel-texte",
+  erreur: "bg-erreur-pastel text-erreur-pastel-texte",
 };
 
 const BADGE_LABELS: Record<StatutIntegration, string> = {
@@ -106,19 +106,19 @@ export function IntegrationCard({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-4">
         <div className="flex min-w-0 items-center gap-3">
           <LogoAvecRepli src={logo} initiales={initiales} />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-neutral-900">{nom}</p>
+            <p className="truncate text-sm font-medium text-encre">{nom}</p>
             <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_STYLES[statut]}`}>
               {statut === "connecte" && estCrmActif ? "Actif" : BADGE_LABELS[statut]}
             </span>
             {statut === "connecte" && apercu && (
-              <p className="mt-0.5 font-mono text-xs text-neutral-400">{apercu}</p>
+              <p className="mt-0.5 font-mono text-xs text-texte-secondaire">{apercu}</p>
             )}
             {statut === "erreur" && messageErreur && (
-              <p className="mt-0.5 max-w-[16rem] truncate text-xs text-red-600" title={messageErreur}>
+              <p className="mt-0.5 max-w-[16rem] truncate text-xs text-erreur" title={messageErreur}>
                 {messageErreur}
               </p>
             )}
@@ -132,7 +132,7 @@ export function IntegrationCard({
                 <button
                   type="button"
                   onClick={() => setModaleOuverte(true)}
-                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                  className="rounded-lg border border-bordure px-3 py-1.5 text-xs font-medium text-encre hover:bg-bordure/60"
                 >
                   Modifier la clé
                 </button>
@@ -140,7 +140,7 @@ export function IntegrationCard({
                   type="button"
                   disabled={chargement}
                   onClick={deconnecter}
-                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                  className="rounded-lg border border-bordure px-3 py-1.5 text-xs font-medium text-encre hover:bg-bordure/60 disabled:opacity-50"
                 >
                   Déconnecter
                 </button>
@@ -149,7 +149,7 @@ export function IntegrationCard({
               <button
                 type="button"
                 onClick={() => setModaleOuverte(true)}
-                className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800"
+                className="rounded-lg bg-argile-forte px-3 py-1.5 text-xs font-medium text-white hover:bg-argile"
               >
                 Connecter
               </button>
@@ -159,7 +159,7 @@ export function IntegrationCard({
               type="button"
               disabled={chargement}
               onClick={deconnecter}
-              className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+              className="rounded-lg border border-bordure px-3 py-1.5 text-xs font-medium text-encre hover:bg-bordure/60 disabled:opacity-50"
             >
               Déconnecter
             </button>
@@ -167,7 +167,7 @@ export function IntegrationCard({
             <button
               type="button"
               onClick={() => setModaleOuverte(true)}
-              className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800"
+              className="rounded-lg bg-argile-forte px-3 py-1.5 text-xs font-medium text-white hover:bg-argile"
             >
               {statut === "erreur" ? "Réessayer" : "Connecter"}
             </button>
@@ -178,7 +178,7 @@ export function IntegrationCard({
               type="button"
               disabled={chargement}
               onClick={utiliserCommeCrm}
-              className="text-[11px] text-neutral-500 underline hover:text-neutral-900 disabled:opacity-50"
+              className="text-[11px] text-texte-secondaire underline hover:text-encre disabled:opacity-50"
             >
               Utiliser comme CRM actif
             </button>
@@ -189,7 +189,7 @@ export function IntegrationCard({
               type="button"
               disabled={chargement}
               onClick={basculerStatutDev}
-              className="text-[11px] text-neutral-400 underline hover:text-neutral-600 disabled:opacity-50"
+              className="text-[11px] text-texte-secondaire underline hover:text-texte-secondaire disabled:opacity-50"
             >
               Basculer (dev)
             </button>

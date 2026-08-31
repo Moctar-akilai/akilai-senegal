@@ -51,7 +51,7 @@ export default async function TicketsPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">Tickets</h1>
+        <h1 className="font-display text-2xl font-semibold text-encre">Tickets</h1>
         <NouveauTicketModal
           automatisations={(automatisations ?? []).map((a) => ({ id: a.id, label: a.nom }))}
         />
@@ -59,11 +59,11 @@ export default async function TicketsPage({
 
       <form className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Statut</label>
+          <label className="mb-1 block text-xs font-medium text-texte-secondaire">Statut</label>
           <select
             name="statut"
             defaultValue={filtreStatut}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className="rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
           >
             <option value="">Tous</option>
             {STATUTS.map((s) => (
@@ -74,11 +74,11 @@ export default async function TicketsPage({
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Priorité</label>
+          <label className="mb-1 block text-xs font-medium text-texte-secondaire">Priorité</label>
           <select
             name="priorite"
             defaultValue={filtrePriorite}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className="rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
           >
             <option value="">Toutes</option>
             {PRIORITES.map((p) => (
@@ -90,22 +90,22 @@ export default async function TicketsPage({
         </div>
         <button
           type="submit"
-          className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          className="rounded-lg border border-bordure px-4 py-2 text-sm font-medium text-encre hover:bg-bordure/60"
         >
           Filtrer
         </button>
       </form>
 
       {(!tickets || tickets.length === 0) && (
-        <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+        <div className="rounded-lg border border-dashed border-bordure p-8 text-center text-sm text-texte-secondaire">
           Aucun ticket ne correspond.
         </div>
       )}
 
       {tickets && tickets.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)]">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-neutral-200 text-xs font-medium uppercase tracking-wide text-neutral-400">
+            <thead className="border-b border-bordure text-xs font-medium uppercase tracking-wide text-texte-secondaire">
               <tr>
                 <th className="px-4 py-3">Titre</th>
                 <th className="px-4 py-3">Automatisation</th>
@@ -114,22 +114,22 @@ export default async function TicketsPage({
                 <th className="px-4 py-3">Créé le</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-bordure">
               {tickets.map((t) => {
                 const automatisation = Array.isArray(t.automatisations)
                   ? t.automatisations[0]
                   : t.automatisations;
                 return (
-                  <tr key={t.id} className="hover:bg-neutral-50">
+                  <tr key={t.id} className="hover:bg-bordure/60">
                     <td className="px-4 py-3">
                       <Link
                         href={`/dashboard/tickets/${t.id}`}
-                        className="font-medium text-neutral-900 hover:underline"
+                        className="font-medium text-encre hover:underline"
                       >
                         {t.titre}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-neutral-600">{automatisation?.nom ?? "—"}</td>
+                    <td className="px-4 py-3 text-texte-secondaire">{automatisation?.nom ?? "—"}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITE_TICKET_BADGE[t.priorite as PrioriteTicket]}`}
@@ -144,7 +144,7 @@ export default async function TicketsPage({
                         {STATUT_TICKET_LABEL[t.statut as StatutTicket]}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-neutral-500">{formatDate(t.created_at)}</td>
+                    <td className="px-4 py-3 text-texte-secondaire">{formatDate(t.created_at)}</td>
                   </tr>
                 );
               })}

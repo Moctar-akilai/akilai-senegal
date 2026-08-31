@@ -58,19 +58,19 @@ export default async function ConversationPage({
   return (
     <div>
       <div className="mb-4 flex items-center gap-3">
-        <Link href="/dashboard/messages" className="text-sm text-neutral-500 hover:text-neutral-900">
+        <Link href="/dashboard/messages" className="text-sm text-texte-secondaire hover:text-encre">
           ← Messages
         </Link>
       </div>
 
       <div className="mb-4">
-        <h1 className="text-xl font-semibold text-neutral-900">{contact.nom || contact.telephone}</h1>
-        {contact.nom && <p className="text-sm text-neutral-500">{contact.telephone}</p>}
+        <h1 className="font-display text-2xl font-semibold text-encre">{contact.nom || contact.telephone}</h1>
+        {contact.nom && <p className="text-sm text-texte-secondaire">{contact.telephone}</p>}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+      <div className="flex flex-col gap-3 rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-4">
         {(!messagesAvecAudio || messagesAvecAudio.length === 0) && (
-          <p className="py-8 text-center text-sm text-neutral-500">Aucun message pour l&apos;instant.</p>
+          <p className="py-8 text-center text-sm text-texte-secondaire">Aucun message pour l&apos;instant.</p>
         )}
 
         {messagesAvecAudio.map((message) => {
@@ -83,8 +83,8 @@ export default async function ConversationPage({
               <div
                 className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
                   estEntrant
-                    ? "bg-neutral-100 text-neutral-900"
-                    : "bg-neutral-900 text-white"
+                    ? "bg-bordure text-encre"
+                    : "bg-argile-forte text-white"
                 }`}
               >
                 {message.type_message === "audio" && message.audioSignedUrl ? (
@@ -96,7 +96,7 @@ export default async function ConversationPage({
                   <p className="whitespace-pre-wrap">{message.contenu}</p>
                 )}
               </div>
-              <span className="mt-1 text-xs text-neutral-400">{formatHeure(message.created_at)}</span>
+              <span className="mt-1 text-xs text-texte-secondaire">{formatHeure(message.created_at)}</span>
             </div>
           );
         })}

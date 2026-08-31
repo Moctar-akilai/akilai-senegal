@@ -14,14 +14,14 @@ import {
   Legend,
 } from "recharts";
 
-const COULEUR_LIGNE = "#2a78d6"; // palette catégorielle, slot 1 (bleu)
-const COULEUR_GRILLE = "#e1e0d9";
-const COULEUR_AXE = "#898781";
+const COULEUR_LIGNE = "#A45628"; // argile forte — accent principal
+const COULEUR_GRILLE = "#E8E2D6"; // bordure
+const COULEUR_AXE = "#6E6A60"; // texte secondaire
 
 const STATUT_COULEURS: Record<string, string> = {
-  actif: "#0ca30c", // status good
-  inactif: "#c3c2b7", // gris neutre
-  erreur: "#d03b3b", // status critical
+  actif: "#3F7D58", // succès
+  inactif: "#C9C2B4", // sable foncé neutre
+  erreur: "#B23A34", // erreur
 };
 
 const STATUT_LABELS: Record<string, string> = {
@@ -73,7 +73,7 @@ export function StatutsAutomatisationsChart({
 }) {
   if (data.length === 0) {
     return (
-      <div className="flex h-[220px] items-center justify-center text-sm text-neutral-500">
+      <div className="flex h-[220px] items-center justify-center text-sm text-texte-secondaire">
         Aucune automatisation pour l&apos;instant.
       </div>
     );
@@ -103,7 +103,7 @@ export function StatutsAutomatisationsChart({
           />
           <Legend
             formatter={(valeur: string) => (
-              <span className="text-xs text-neutral-600">{STATUT_LABELS[valeur] ?? valeur}</span>
+              <span className="text-xs text-texte-secondaire">{STATUT_LABELS[valeur] ?? valeur}</span>
             )}
             iconType="circle"
             iconSize={8}

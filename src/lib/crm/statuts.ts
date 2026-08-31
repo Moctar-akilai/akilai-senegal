@@ -1,10 +1,10 @@
 export type StatutContact = "prospect" | "contacte" | "client" | "inactif";
 
 export const STATUT_CONTACT_BADGE: Record<StatutContact, string> = {
-  prospect: "bg-blue-50 text-blue-700",
-  contacte: "bg-amber-100 text-amber-700",
-  client: "bg-green-100 text-green-700",
-  inactif: "bg-neutral-100 text-neutral-500",
+  prospect: "bg-neutre-pastel text-neutre-pastel-texte",
+  contacte: "bg-attention-pastel text-attention-pastel-texte",
+  client: "bg-succes-pastel text-succes-pastel-texte",
+  inactif: "bg-bordure text-texte-secondaire",
 };
 
 export const STATUT_CONTACT_LABEL: Record<StatutContact, string> = {
@@ -17,10 +17,10 @@ export const STATUT_CONTACT_LABEL: Record<StatutContact, string> = {
 export type PrioriteTicket = "basse" | "normale" | "haute" | "urgente";
 
 export const PRIORITE_TICKET_BADGE: Record<PrioriteTicket, string> = {
-  basse: "bg-neutral-100 text-neutral-600",
-  normale: "bg-blue-50 text-blue-700",
-  haute: "bg-amber-100 text-amber-700",
-  urgente: "bg-red-100 text-red-700",
+  basse: "bg-bordure text-texte-secondaire",
+  normale: "bg-neutre-pastel text-neutre-pastel-texte",
+  haute: "bg-attention-pastel text-attention-pastel-texte",
+  urgente: "bg-erreur-pastel text-erreur-pastel-texte",
 };
 
 export const PRIORITE_TICKET_LABEL: Record<PrioriteTicket, string> = {
@@ -33,10 +33,10 @@ export const PRIORITE_TICKET_LABEL: Record<PrioriteTicket, string> = {
 export type StatutTicket = "ouvert" | "en_cours" | "resolu" | "ferme";
 
 export const STATUT_TICKET_BADGE: Record<StatutTicket, string> = {
-  ouvert: "bg-blue-50 text-blue-700",
-  en_cours: "bg-amber-100 text-amber-700",
-  resolu: "bg-green-100 text-green-700",
-  ferme: "bg-neutral-100 text-neutral-500",
+  ouvert: "bg-neutre-pastel text-neutre-pastel-texte",
+  en_cours: "bg-attention-pastel text-attention-pastel-texte",
+  resolu: "bg-succes-pastel text-succes-pastel-texte",
+  ferme: "bg-bordure text-texte-secondaire",
 };
 
 export const STATUT_TICKET_LABEL: Record<StatutTicket, string> = {

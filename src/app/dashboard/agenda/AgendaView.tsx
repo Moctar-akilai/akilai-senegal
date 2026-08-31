@@ -70,33 +70,33 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">Agenda</h1>
+        <h1 className="font-display text-2xl font-semibold text-encre">Agenda</h1>
         <button
           type="button"
           onClick={ouvrirModaleNouveauRdv}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+          className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile"
         >
           + Nouveau RDV
         </button>
       </div>
 
       {!integrationConnectee && (
-        <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center">
-          <p className="mb-4 text-sm text-neutral-600">
+        <div className="rounded-lg border border-dashed border-bordure bg-carte p-8 text-center">
+          <p className="mb-4 text-sm text-texte-secondaire">
             Connectez Google Calendar ou Calendly pour voir votre agenda ici.
           </p>
           <div className="flex justify-center gap-3">
             <button
               type="button"
               onClick={() => ouvrirModaleConnexion("Google Calendar")}
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+              className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile"
             >
               Connecter Google Calendar
             </button>
             <button
               type="button"
               onClick={() => ouvrirModaleConnexion("Calendly")}
-              className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+              className="rounded-lg border border-bordure px-4 py-2 text-sm font-medium text-encre hover:bg-bordure/60"
             >
               Connecter Calendly
             </button>
@@ -104,13 +104,13 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
         </div>
       )}
 
-      <div className="rounded-lg border border-neutral-200 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 p-4">
+      <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-bordure p-4">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setDateActuelle((d) => decaler(d, vueCalendrier, -1))}
-              className="rounded-md border border-neutral-300 px-2.5 py-1 text-sm text-neutral-600 hover:bg-neutral-50"
+              className="rounded-lg border border-bordure px-2.5 py-1 text-sm text-texte-secondaire hover:bg-bordure/60"
               aria-label="Période précédente"
             >
               ←
@@ -118,26 +118,26 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
             <button
               type="button"
               onClick={() => setDateActuelle(new Date())}
-              className="rounded-md border border-neutral-300 px-3 py-1 text-sm text-neutral-600 hover:bg-neutral-50"
+              className="rounded-lg border border-bordure px-3 py-1 text-sm text-texte-secondaire hover:bg-bordure/60"
             >
               Aujourd&apos;hui
             </button>
             <button
               type="button"
               onClick={() => setDateActuelle((d) => decaler(d, vueCalendrier, 1))}
-              className="rounded-md border border-neutral-300 px-2.5 py-1 text-sm text-neutral-600 hover:bg-neutral-50"
+              className="rounded-lg border border-bordure px-2.5 py-1 text-sm text-texte-secondaire hover:bg-bordure/60"
               aria-label="Période suivante"
             >
               →
             </button>
-            <span className="ml-2 text-sm font-medium capitalize text-neutral-900">
+            <span className="ml-2 text-sm font-medium capitalize text-encre">
               {titrePeriode(vueCalendrier, dateActuelle)}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             {vue === "calendrier" && (
-              <div className="flex rounded-md border border-neutral-300 p-0.5 text-sm">
+              <div className="flex rounded-lg border border-bordure p-0.5 text-sm">
                 {(["mois", "semaine", "jour"] as VueCalendrier[]).map((v) => (
                   <button
                     key={v}
@@ -145,8 +145,8 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
                     onClick={() => setVueCalendrier(v)}
                     className={`rounded px-3 py-1 capitalize ${
                       vueCalendrier === v
-                        ? "bg-neutral-900 text-white"
-                        : "text-neutral-600 hover:bg-neutral-50"
+                        ? "bg-argile-forte text-white"
+                        : "text-texte-secondaire hover:bg-bordure/60"
                     }`}
                   >
                     {v}
@@ -154,12 +154,12 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
                 ))}
               </div>
             )}
-            <div className="flex rounded-md border border-neutral-300 p-0.5 text-sm">
+            <div className="flex rounded-lg border border-bordure p-0.5 text-sm">
               <button
                 type="button"
                 onClick={() => setVue("calendrier")}
                 className={`rounded px-3 py-1 ${
-                  vue === "calendrier" ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-50"
+                  vue === "calendrier" ? "bg-argile-forte text-white" : "text-texte-secondaire hover:bg-bordure/60"
                 }`}
               >
                 Calendrier
@@ -168,7 +168,7 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
                 type="button"
                 onClick={() => setVue("liste")}
                 className={`rounded px-3 py-1 ${
-                  vue === "liste" ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-50"
+                  vue === "liste" ? "bg-argile-forte text-white" : "text-texte-secondaire hover:bg-bordure/60"
                 }`}
               >
                 Liste
@@ -187,14 +187,14 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
         ) : (
           <div className="p-4">
             {evenementsGroupesParDate.length === 0 ? (
-              <p className="py-8 text-center text-sm text-neutral-500">
+              <p className="py-8 text-center text-sm text-texte-secondaire">
                 Aucun rendez-vous programmé.
               </p>
             ) : (
               <ul className="space-y-4">
                 {evenementsGroupesParDate.map(([jour, evenements]) => (
                   <li key={jour}>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-texte-secondaire">
                       {new Date(jour).toLocaleDateString("fr-FR", {
                         weekday: "long",
                         day: "2-digit",
@@ -206,7 +206,7 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
                         <li key={e.id}>
                           <button
                             onClick={() => setEvenementSelectionne(e)}
-                            className="w-full rounded-md border border-neutral-200 px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50"
+                            className="w-full rounded-lg border border-bordure px-3 py-2 text-left text-sm text-encre hover:bg-bordure/60"
                           >
                             {e.titre}
                           </button>

@@ -61,7 +61,7 @@ export function NouveauContactModal() {
       <button
         type="button"
         onClick={() => setOuvert(true)}
-        className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+        className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile"
       >
         + Nouveau contact
       </button>
@@ -72,44 +72,44 @@ export function NouveauContactModal() {
           onClick={() => setOuvert(false)}
         >
           <div
-            className="w-full max-w-sm rounded-xl border border-neutral-200 bg-white p-6 shadow-lg"
+            className="w-full max-w-sm rounded-lg border border-bordure bg-carte p-6 shadow-[var(--shadow-flottant)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-4 text-base font-semibold text-neutral-900">Nouveau contact</h3>
+            <h3 className="mb-4 text-base font-semibold text-encre">Nouveau contact</h3>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Nom</label>
+                <label className="mb-1 block text-sm font-medium text-encre">Nom</label>
                 <input
                   value={nom}
                   onChange={(e) => setNom(e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+                  className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Téléphone</label>
+                <label className="mb-1 block text-sm font-medium text-encre">Téléphone</label>
                 <input
                   required
                   placeholder="+221771234567"
                   value={telephone}
                   onChange={(e) => setTelephone(e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+                  className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Email</label>
+                <label className="mb-1 block text-sm font-medium text-encre">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+                  className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Statut</label>
+                <label className="mb-1 block text-sm font-medium text-encre">Statut</label>
                 <select
                   value={statut}
                   onChange={(e) => setStatut(e.target.value as Statut)}
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+                  className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
                 >
                   <option value="prospect">Prospect</option>
                   <option value="contacte">Contacté</option>
@@ -118,29 +118,29 @@ export function NouveauContactModal() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Notes</label>
+                <label className="mb-1 block text-sm font-medium text-encre">Notes</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+                  className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
                 />
               </div>
 
-              {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+              {erreur && <p className="text-sm text-erreur">{erreur}</p>}
 
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setOuvert(false)}
-                  className="flex-1 rounded-md border border-neutral-300 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                  className="flex-1 rounded-lg border border-bordure py-2 text-sm font-medium text-encre hover:bg-bordure/60"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={chargement}
-                  className="flex-1 rounded-md bg-neutral-900 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-argile-forte py-2 text-sm font-medium text-white hover:bg-argile disabled:opacity-50"
                 >
                   {chargement ? "Ajout..." : "Ajouter"}
                 </button>

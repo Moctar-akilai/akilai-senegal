@@ -40,20 +40,20 @@ export function TicketReplyForm({ ticketId }: { ticketId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-neutral-100 p-4">
+    <form onSubmit={handleSubmit} className="border-t border-bordure p-4">
       <textarea
         value={contenu}
         onChange={(e) => setContenu(e.target.value)}
         rows={3}
         placeholder="Écrire un message à l'équipe support AkilAI…"
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+        className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
       />
-      {erreur && <p className="mt-1 text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="mt-1 text-sm text-erreur">{erreur}</p>}
       <div className="mt-2 flex justify-end">
         <button
           type="submit"
           disabled={chargement || !contenu.trim()}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+          className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile disabled:opacity-50"
         >
           {chargement ? "Envoi..." : "Envoyer"}
         </button>

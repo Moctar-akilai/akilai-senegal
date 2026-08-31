@@ -55,7 +55,7 @@ function MoisGrid({
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-[640px] grid-cols-7 border-b border-neutral-200 text-xs font-medium text-neutral-500">
+      <div className="grid min-w-[640px] grid-cols-7 border-b border-bordure text-xs font-medium text-texte-secondaire">
         {JOURS_ABREGES.map((j) => (
           <div key={j} className="px-2 py-2 text-center">
             {j}
@@ -69,17 +69,17 @@ function MoisGrid({
           return (
             <div
               key={jour.toISOString()}
-              className={`min-h-[90px] border-b border-r border-neutral-100 p-1.5 ${
-                horsMois ? "bg-neutral-50" : "bg-white"
+              className={`min-h-[90px] border-b border-r border-bordure p-1.5 ${
+                horsMois ? "bg-sable" : "bg-carte"
               }`}
             >
               <span
                 className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs ${
                   memeJour(jour, aujourdHui)
-                    ? "bg-neutral-900 font-medium text-white"
+                    ? "bg-argile-forte font-medium text-white"
                     : horsMois
-                      ? "text-neutral-300"
-                      : "text-neutral-700"
+                      ? "text-texte-secondaire"
+                      : "text-encre"
                 }`}
               >
                 {jour.getDate()}
@@ -89,7 +89,7 @@ function MoisGrid({
                   <button
                     key={e.id}
                     onClick={() => onSelectEvent(e)}
-                    className="block w-full truncate rounded bg-neutral-900 px-1.5 py-0.5 text-left text-[11px] text-white hover:bg-neutral-800"
+                    className="block w-full truncate rounded bg-argile-forte px-1.5 py-0.5 text-left text-[11px] text-white hover:bg-argile"
                   >
                     {e.titre}
                   </button>
@@ -124,8 +124,8 @@ function GrilleHoraire({
         {jours.map((jour) => (
           <div
             key={jour.toISOString()}
-            className={`border-b border-neutral-200 px-2 py-2 text-center text-xs font-medium ${
-              memeJour(jour, aujourdHui) ? "text-neutral-900" : "text-neutral-500"
+            className={`border-b border-bordure px-2 py-2 text-center text-xs font-medium ${
+              memeJour(jour, aujourdHui) ? "text-encre" : "text-texte-secondaire"
             }`}
           >
             {JOURS_ABREGES[(jour.getDay() + 6) % 7]} {jour.getDate()}
@@ -134,7 +134,7 @@ function GrilleHoraire({
 
         {HEURES.map((heure) => (
           <Fragment key={heure}>
-            <div className="border-r border-neutral-100 pr-2 text-right text-[11px] text-neutral-400">
+            <div className="border-r border-bordure pr-2 text-right text-[11px] text-texte-secondaire">
               {String(heure).padStart(2, "0")}h
             </div>
             {jours.map((jour) => {
@@ -144,13 +144,13 @@ function GrilleHoraire({
               return (
                 <div
                   key={`${jour.toISOString()}-${heure}`}
-                  className="min-h-[36px] border-b border-r border-neutral-100 p-0.5"
+                  className="min-h-[36px] border-b border-r border-bordure p-0.5"
                 >
                   {events.map((e) => (
                     <button
                       key={e.id}
                       onClick={() => onSelectEvent(e)}
-                      className="block w-full truncate rounded bg-neutral-900 px-1.5 py-0.5 text-left text-[11px] text-white hover:bg-neutral-800"
+                      className="block w-full truncate rounded bg-argile-forte px-1.5 py-0.5 text-left text-[11px] text-white hover:bg-argile"
                     >
                       {e.titre}
                     </button>

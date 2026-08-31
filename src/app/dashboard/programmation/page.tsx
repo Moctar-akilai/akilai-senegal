@@ -38,7 +38,7 @@ export default async function ProgrammationPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900">Programmation</h1>
+      <h1 className="font-display text-2xl font-semibold text-encre">Programmation</h1>
       <ProgrammationForm
         automatisations={automatisations ?? []}
         programmationsParAutomatisation={programmationsParAutomatisation}

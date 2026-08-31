@@ -40,16 +40,16 @@ export default async function FacturesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900">Mes factures</h1>
+      <h1 className="font-display text-2xl font-semibold text-encre">Mes factures</h1>
 
       {facturesAvecUrl.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+        <div className="rounded-lg border border-dashed border-bordure p-8 text-center text-sm text-texte-secondaire">
           Aucune facture pour l&apos;instant.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)]">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-neutral-200 text-xs font-medium uppercase tracking-wide text-neutral-400">
+            <thead className="border-b border-bordure text-xs font-medium uppercase tracking-wide text-texte-secondaire">
               <tr>
                 <th className="px-4 py-3">Numéro</th>
                 <th className="px-4 py-3">Montant</th>
@@ -59,13 +59,13 @@ export default async function FacturesPage() {
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-bordure">
               {facturesAvecUrl.map((f) => (
-                <tr key={f.id} className="hover:bg-neutral-50">
-                  <td className="px-4 py-3 font-medium text-neutral-900">{f.numero}</td>
-                  <td className="px-4 py-3 text-neutral-600">{formatMontant(f.montant)}</td>
-                  <td className="px-4 py-3 text-neutral-500">{formatDate(f.date_emission)}</td>
-                  <td className="px-4 py-3 text-neutral-500">{formatDate(f.date_echeance)}</td>
+                <tr key={f.id} className="hover:bg-bordure/60">
+                  <td className="px-4 py-3 font-medium text-encre">{f.numero}</td>
+                  <td className="px-4 py-3 text-texte-secondaire">{formatMontant(f.montant)}</td>
+                  <td className="px-4 py-3 text-texte-secondaire">{formatDate(f.date_emission)}</td>
+                  <td className="px-4 py-3 text-texte-secondaire">{formatDate(f.date_echeance)}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUT_FACTURE_BADGE[f.statut as StatutFacture]}`}
@@ -79,12 +79,12 @@ export default async function FacturesPage() {
                         href={f.urlSignee}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                        className="rounded-lg border border-bordure px-3 py-1.5 text-xs font-medium text-encre hover:bg-bordure/60"
                       >
                         Télécharger
                       </a>
                     ) : (
-                      <span className="text-xs text-neutral-400">PDF non disponible</span>
+                      <span className="text-xs text-texte-secondaire">PDF non disponible</span>
                     )}
                   </td>
                 </tr>

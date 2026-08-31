@@ -78,36 +78,36 @@ export default async function CrmPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">CRM</h1>
+        <h1 className="font-display text-2xl font-semibold text-encre">CRM</h1>
         <NouveauContactModal />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="rounded-lg border border-neutral-200 bg-white p-5">
-            <p className="text-sm text-neutral-500">{kpi.label}</p>
-            <p className="mt-2 text-3xl font-semibold text-neutral-900">{kpi.valeur}</p>
+          <div key={kpi.label} className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5">
+            <p className="text-sm text-texte-secondaire">{kpi.label}</p>
+            <p className="mt-2 font-display text-4xl font-semibold text-encre tabular-nums">{kpi.valeur}</p>
           </div>
         ))}
       </div>
 
       <form className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Recherche</label>
+          <label className="mb-1 block text-xs font-medium text-texte-secondaire">Recherche</label>
           <input
             type="text"
             name="q"
             defaultValue={recherche}
             placeholder="Nom, téléphone ou email…"
-            className="w-64 rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className="w-64 rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Statut</label>
+          <label className="mb-1 block text-xs font-medium text-texte-secondaire">Statut</label>
           <select
             name="statut"
             defaultValue={filtreStatut}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className="rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
           >
             <option value="">Tous</option>
             {STATUTS.map((s) => (
@@ -119,22 +119,22 @@ export default async function CrmPage({
         </div>
         <button
           type="submit"
-          className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          className="rounded-lg border border-bordure px-4 py-2 text-sm font-medium text-encre hover:bg-bordure/60"
         >
           Filtrer
         </button>
       </form>
 
       {(!contacts || contacts.length === 0) && (
-        <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+        <div className="rounded-lg border border-dashed border-bordure p-8 text-center text-sm text-texte-secondaire">
           Aucun contact ne correspond.
         </div>
       )}
 
       {contacts && contacts.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)]">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-neutral-200 text-xs font-medium uppercase tracking-wide text-neutral-400">
+            <thead className="border-b border-bordure text-xs font-medium uppercase tracking-wide text-texte-secondaire">
               <tr>
                 <th className="px-4 py-3">Nom</th>
                 <th className="px-4 py-3">Téléphone</th>
@@ -143,16 +143,16 @@ export default async function CrmPage({
                 <th className="px-4 py-3">Dernière interaction</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-bordure">
               {contacts.map((c) => (
-                <tr key={c.id} className="hover:bg-neutral-50">
+                <tr key={c.id} className="hover:bg-bordure/60">
                   <td className="px-4 py-3">
-                    <Link href={`/dashboard/crm/${c.id}`} className="font-medium text-neutral-900 hover:underline">
+                    <Link href={`/dashboard/crm/${c.id}`} className="font-medium text-encre hover:underline">
                       {c.nom || `Contact sans nom (${c.telephone})`}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-neutral-600">{c.telephone}</td>
-                  <td className="px-4 py-3 text-neutral-600">{c.email || "—"}</td>
+                  <td className="px-4 py-3 text-texte-secondaire">{c.telephone}</td>
+                  <td className="px-4 py-3 text-texte-secondaire">{c.email || "—"}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUT_CONTACT_BADGE[c.statut as StatutContact]}`}
@@ -160,7 +160,7 @@ export default async function CrmPage({
                       {STATUT_CONTACT_LABEL[c.statut as StatutContact]}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-neutral-500">{formatDate(c.derniere_interaction)}</td>
+                  <td className="px-4 py-3 text-texte-secondaire">{formatDate(c.derniere_interaction)}</td>
                 </tr>
               ))}
             </tbody>

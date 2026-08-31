@@ -58,14 +58,14 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/dashboard/tickets" className="text-sm text-neutral-500 hover:text-neutral-900">
+        <Link href="/dashboard/tickets" className="text-sm text-texte-secondaire hover:text-encre">
           ← Tickets
         </Link>
       </div>
 
-      <div className="rounded-lg border border-neutral-200 bg-white p-5">
+      <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h1 className="text-lg font-semibold text-neutral-900">{ticket.titre}</h1>
+          <h1 className="font-display text-xl font-semibold text-encre">{ticket.titre}</h1>
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITE_TICKET_BADGE[ticket.priorite as PrioriteTicket]}`}
           >
@@ -78,21 +78,21 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           </span>
         </div>
 
-        <p className="mb-4 text-sm text-neutral-600">
+        <p className="mb-4 text-sm text-texte-secondaire">
           Automatisation concernée : {automatisation?.nom ?? "—"}
         </p>
 
         {ticket.description && (
-          <p className="mb-4 whitespace-pre-wrap text-sm text-neutral-700">{ticket.description}</p>
+          <p className="mb-4 whitespace-pre-wrap text-sm text-encre">{ticket.description}</p>
         )}
 
         <TicketPrioriteForm ticketId={ticket.id} prioriteInitiale={ticket.priorite as PrioriteTicket} />
       </div>
 
-      <div className="rounded-lg border border-neutral-200 bg-white">
+      <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)]">
         <div className="flex flex-col gap-3 p-4">
           {(!messages || messages.length === 0) && (
-            <p className="py-8 text-center text-sm text-neutral-500">Aucun message pour l&apos;instant.</p>
+            <p className="py-8 text-center text-sm text-texte-secondaire">Aucun message pour l&apos;instant.</p>
           )}
 
           {messages?.map((m) => {
@@ -101,12 +101,12 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
               <div key={m.id} className={`flex flex-col ${estClient ? "items-end" : "items-start"}`}>
                 <div
                   className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
-                    estClient ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-900"
+                    estClient ? "bg-argile-forte text-white" : "bg-bordure text-encre"
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{m.contenu}</p>
                 </div>
-                <span className="mt-1 text-xs text-neutral-400">{formatHeure(m.created_at)}</span>
+                <span className="mt-1 text-xs text-texte-secondaire">{formatHeure(m.created_at)}</span>
               </div>
             );
           })}
