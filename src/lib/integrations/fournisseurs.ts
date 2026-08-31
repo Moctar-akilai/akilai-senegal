@@ -215,3 +215,10 @@ export function definitionFournisseur(id: Fournisseur): DefinitionFournisseur | 
 export const FOURNISSEURS_CLE_API: Fournisseur[] = TOUS_LES_FOURNISSEURS.filter(
   (f) => f.methode === "cle_api"
 ).map((f) => f.id);
+
+// CRM AkilAI (natif, /dashboard/crm) est le CRM actif par défaut ; ces
+// fournisseurs externes peuvent le remplacer une fois connectés (clé API
+// valide) — voir parametres_compte.crm_actif (migration_008_crm_actif.sql)
+// et src/app/dashboard/integrations/page.tsx.
+export type CrmActif = "crm_akilai" | "hubspot" | "notion" | "airtable";
+export const FOURNISSEURS_CRM_EXTERNES: Fournisseur[] = ["hubspot", "notion", "airtable"];

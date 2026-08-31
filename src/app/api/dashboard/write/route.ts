@@ -44,6 +44,7 @@ const STATUTS_AUTOMATISATION = ["actif", "inactif"] as const;
 const STATUTS_INTEGRATION = ["non_connecte", "connecte", "erreur"] as const;
 const PRIORITES_TICKET = ["basse", "normale", "haute", "urgente"] as const;
 const TONS_ASSISTANT = ["professionnel", "amical", "decontracte"] as const;
+const CRM_VALIDES = ["crm_akilai", "hubspot", "notion", "airtable"] as const;
 
 function estString(v: unknown): v is string {
   return typeof v === "string";
@@ -285,6 +286,16 @@ export async function POST(request: Request) {
         .eq("gestionnaire_id", gestionnaire.id)
         .eq("fournisseur", body.fournisseur);
       if (err) return erreur(err.message, 500);
+
+      // Si le fournisseur déconnecté était le CRM actif, retombe sur le CRM
+      // natif plutôt que de laisser crm_actif pointer vers une intégration
+      // non connectée.
+      await supabase
+        .from("parametres_compte")
+        .update({ crm_actif: "crm_akilai" })
+        .eq("gestionnaire_id", gestionnaire.id)
+        .eq("crm_actif", body.fournisseur);
+
       return ok(undefined);
     }
 
@@ -309,6 +320,32 @@ export async function POST(request: Request) {
         },
         { onConflict: "gestionnaire_id,fournisseur" }
       );
+      if (err) return erreur(err.message, 500);
+      return ok(undefined);
+    }
+
+    case "integration.setCrmActif": {
+      if (!estString(body.fournisseur) || !CRM_VALIDES.includes(body.fournisseur as (typeof CRM_VALIDES)[number])) {
+        return erreur("Requête invalide.");
+      }
+      // Le CRM natif est toujours disponible ; un fournisseur externe doit
+      // d'abord être connecté (clé API valide) avant de pouvoir devenir le
+      // CRM actif.
+      if (body.fournisseur !== "crm_akilai") {
+        const { data: integration } = await supabase
+          .from("integrations")
+          .select("statut")
+          .eq("gestionnaire_id", gestionnaire.id)
+          .eq("fournisseur", body.fournisseur)
+          .maybeSingle();
+        if (!integration || integration.statut !== "connecte") {
+          return erreur("Ce fournisseur doit être connecté avant de devenir le CRM actif.");
+        }
+      }
+      const { error: err } = await supabase
+        .from("parametres_compte")
+        .update({ crm_actif: body.fournisseur })
+        .eq("gestionnaire_id", gestionnaire.id);
       if (err) return erreur(err.message, 500);
       return ok(undefined);
     }

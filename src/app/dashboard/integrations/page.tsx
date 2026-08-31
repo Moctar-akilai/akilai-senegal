@@ -1,8 +1,14 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
-import { CATEGORIES_INTEGRATIONS, type StatutIntegration } from "@/lib/integrations/fournisseurs";
+import {
+  CATEGORIES_INTEGRATIONS,
+  FOURNISSEURS_CRM_EXTERNES,
+  type CrmActif,
+  type StatutIntegration,
+} from "@/lib/integrations/fournisseurs";
 import { dechiffrerCleApi, apercuMasqueCleApi } from "@/lib/integrations/chiffrement";
 import { IntegrationCard } from "./IntegrationCard";
+import { CrmAkilaiCard } from "./CrmAkilaiCard";
 import { LogoAvecRepli } from "./LogoAvecRepli";
 
 type LigneIntegration = {
@@ -18,10 +24,15 @@ export default async function IntegrationsPage() {
   const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
-  const { data: integrations } = await supabase
-    .from("integrations")
-    .select("fournisseur, statut, cle_api_chiffree, message_erreur")
-    .eq("gestionnaire_id", user.id);
+  const [{ data: integrations }, { data: parametresCompte }] = await Promise.all([
+    supabase
+      .from("integrations")
+      .select("fournisseur, statut, cle_api_chiffree, message_erreur")
+      .eq("gestionnaire_id", user.id),
+    supabase.from("parametres_compte").select("crm_actif").eq("gestionnaire_id", user.id).maybeSingle(),
+  ]);
+
+  const crmActif = (parametresCompte?.crm_actif ?? "crm_akilai") as CrmActif;
 
   // L'aperçu masqué est calculé ici, côté serveur (Server Component) : la
   // clé n'est déchiffrée que le temps de produire un aperçu tronqué, jamais
@@ -82,6 +93,9 @@ export default async function IntegrationsPage() {
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {categorie.fournisseurs.map((f) => {
+              if (f.id === "crm_akilai") {
+                return <CrmAkilaiCard key={f.id} estActifInitial={crmActif === "crm_akilai"} />;
+              }
               const donnees = donneesParFournisseur.get(f.id);
               return (
                 <IntegrationCard
@@ -95,6 +109,8 @@ export default async function IntegrationsPage() {
                   statutInitial={donnees?.statut ?? "non_connecte"}
                   apercuInitial={donnees?.apercu ?? null}
                   messageErreurInitial={donnees?.messageErreur ?? null}
+                  peutEtreCrm={FOURNISSEURS_CRM_EXTERNES.includes(f.id)}
+                  estCrmActifInitial={crmActif === f.id}
                 />
               );
             })}

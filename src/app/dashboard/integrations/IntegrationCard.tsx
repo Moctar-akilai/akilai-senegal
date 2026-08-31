@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 import { ModaleAVenir } from "../ModaleAVenir";
 import { ConnexionCleApiModal } from "./ConnexionCleApiModal";
@@ -35,6 +36,8 @@ export function IntegrationCard({
   statutInitial,
   apercuInitial,
   messageErreurInitial,
+  peutEtreCrm = false,
+  estCrmActifInitial = false,
 }: {
   fournisseur: Fournisseur;
   nom: string;
@@ -45,10 +48,14 @@ export function IntegrationCard({
   statutInitial: StatutIntegration;
   apercuInitial: string | null;
   messageErreurInitial: string | null;
+  peutEtreCrm?: boolean;
+  estCrmActifInitial?: boolean;
 }) {
+  const router = useRouter();
   const [statut, setStatut] = useState<StatutIntegration>(statutInitial);
   const [apercu, setApercu] = useState(apercuInitial);
   const [messageErreur, setMessageErreur] = useState(messageErreurInitial);
+  const [estCrmActif, setEstCrmActif] = useState(estCrmActifInitial);
   const [chargement, setChargement] = useState(false);
   const [modaleOuverte, setModaleOuverte] = useState(false);
 
@@ -63,8 +70,23 @@ export function IntegrationCard({
       setStatut("non_connecte");
       setApercu(null);
       setMessageErreur(null);
+      setEstCrmActif(false);
     }
     setChargement(false);
+    // Déconnecter le CRM actif retombe sur CRM AkilAI côté serveur (voir
+    // integration.disconnect) : rafraîchit la page pour que sa carte
+    // reflète ce changement.
+    router.refresh();
+  }
+
+  async function utiliserCommeCrm() {
+    setChargement(true);
+    const resultat = await ecrireDashboard("integration.setCrmActif", { fournisseur });
+    if (resultat.ok) setEstCrmActif(true);
+    setChargement(false);
+    // Un seul CRM actif à la fois : rafraîchit pour que la carte CRM AkilAI
+    // (et tout autre fournisseur CRM précédemment actif) se resynchronise.
+    router.refresh();
   }
 
   // Réservé au développement — jamais affiché en production (la vérif est
@@ -90,7 +112,7 @@ export function IntegrationCard({
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-neutral-900">{nom}</p>
             <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_STYLES[statut]}`}>
-              {BADGE_LABELS[statut]}
+              {statut === "connecte" && estCrmActif ? "Actif" : BADGE_LABELS[statut]}
             </span>
             {statut === "connecte" && apercu && (
               <p className="mt-0.5 font-mono text-xs text-neutral-400">{apercu}</p>
@@ -104,24 +126,34 @@ export function IntegrationCard({
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1">
-          {methode === "cle_api" && (statut === "connecte" || statut === "erreur") ? (
-            <div className="flex gap-1.5">
+          {methode === "cle_api" ? (
+            statut === "connecte" || statut === "erreur" ? (
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setModaleOuverte(true)}
+                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                >
+                  Modifier la clé
+                </button>
+                <button
+                  type="button"
+                  disabled={chargement}
+                  onClick={deconnecter}
+                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                >
+                  Déconnecter
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
                 onClick={() => setModaleOuverte(true)}
-                className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800"
               >
-                Modifier la clé
+                Connecter
               </button>
-              <button
-                type="button"
-                disabled={chargement}
-                onClick={deconnecter}
-                className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
-              >
-                Déconnecter
-              </button>
-            </div>
+            )
           ) : statut === "connecte" ? (
             <button
               type="button"
@@ -138,6 +170,17 @@ export function IntegrationCard({
               className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800"
             >
               {statut === "erreur" ? "Réessayer" : "Connecter"}
+            </button>
+          )}
+
+          {peutEtreCrm && statut === "connecte" && !estCrmActif && (
+            <button
+              type="button"
+              disabled={chargement}
+              onClick={utiliserCommeCrm}
+              className="text-[11px] text-neutral-500 underline hover:text-neutral-900 disabled:opacity-50"
+            >
+              Utiliser comme CRM actif
             </button>
           )}
 
