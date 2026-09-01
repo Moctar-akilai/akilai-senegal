@@ -5,8 +5,14 @@ import { useRouter } from "next/navigation";
 import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 import { ModaleAVenir } from "../ModaleAVenir";
 import { ConnexionCleApiModal } from "./ConnexionCleApiModal";
+import { ConfigurerBaseNotionModal } from "./ConfigurerBaseNotionModal";
 import { LogoAvecRepli } from "./LogoAvecRepli";
-import type { Fournisseur, MethodeConnexion, StatutIntegration } from "@/lib/integrations/fournisseurs";
+import type {
+  ConfigIntegration,
+  Fournisseur,
+  MethodeConnexion,
+  StatutIntegration,
+} from "@/lib/integrations/fournisseurs";
 
 const BADGE_STYLES: Record<StatutIntegration, string> = {
   non_connecte: "bg-bordure text-texte-secondaire",
@@ -38,6 +44,8 @@ export function IntegrationCard({
   messageErreurInitial,
   peutEtreCrm = false,
   estCrmActifInitial = false,
+  necessiteConfig = false,
+  configInitiale = null,
 }: {
   fournisseur: Fournisseur;
   nom: string;
@@ -50,14 +58,18 @@ export function IntegrationCard({
   messageErreurInitial: string | null;
   peutEtreCrm?: boolean;
   estCrmActifInitial?: boolean;
+  necessiteConfig?: boolean;
+  configInitiale?: ConfigIntegration | null;
 }) {
   const router = useRouter();
   const [statut, setStatut] = useState<StatutIntegration>(statutInitial);
   const [apercu, setApercu] = useState(apercuInitial);
   const [messageErreur, setMessageErreur] = useState(messageErreurInitial);
   const [estCrmActif, setEstCrmActif] = useState(estCrmActifInitial);
+  const [config, setConfig] = useState(configInitiale);
   const [chargement, setChargement] = useState(false);
   const [modaleOuverte, setModaleOuverte] = useState(false);
+  const [modaleConfigOuverte, setModaleConfigOuverte] = useState(false);
 
   // ⚠️ Contournement temporaire de l'authentification — écrit via
   // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
@@ -173,6 +185,16 @@ export function IntegrationCard({
             </button>
           )}
 
+          {necessiteConfig && statut === "connecte" && (
+            <button
+              type="button"
+              onClick={() => setModaleConfigOuverte(true)}
+              className="text-[11px] text-texte-secondaire underline hover:text-encre"
+            >
+              Configurer la base
+            </button>
+          )}
+
           {peutEtreCrm && statut === "connecte" && !estCrmActif && (
             <button
               type="button"
@@ -217,6 +239,15 @@ export function IntegrationCard({
           titre={`Connexion à ${nom}`}
           description={`Cette intégration sera bientôt disponible. Vous pourrez bientôt connecter ${nom} directement depuis AkilAI.`}
           onFermer={() => setModaleOuverte(false)}
+        />
+      )}
+
+      {necessiteConfig && (
+        <ConfigurerBaseNotionModal
+          ouvert={modaleConfigOuverte}
+          configInitiale={config}
+          onFermer={() => setModaleConfigOuverte(false)}
+          onEnregistre={(nouvelleConfig) => setConfig(nouvelleConfig)}
         />
       )}
     </>

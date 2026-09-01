@@ -3,6 +3,8 @@ import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import {
   CATEGORIES_INTEGRATIONS,
   FOURNISSEURS_CRM_EXTERNES,
+  FOURNISSEURS_NECESSITANT_CONFIG,
+  type ConfigIntegration,
   type CrmActif,
   type StatutIntegration,
 } from "@/lib/integrations/fournisseurs";
@@ -15,6 +17,7 @@ type LigneIntegration = {
   statut: StatutIntegration;
   apercu: string | null;
   messageErreur: string | null;
+  config: ConfigIntegration | null;
 };
 
 export default async function IntegrationsPage() {
@@ -27,7 +30,7 @@ export default async function IntegrationsPage() {
   const [{ data: integrations }, { data: parametresCompte }] = await Promise.all([
     supabase
       .from("integrations")
-      .select("fournisseur, statut, cle_api_chiffree, message_erreur")
+      .select("fournisseur, statut, cle_api_chiffree, message_erreur, config")
       .eq("gestionnaire_id", user.id),
     supabase.from("parametres_compte").select("crm_actif").eq("gestionnaire_id", user.id).maybeSingle(),
   ]);
@@ -57,6 +60,7 @@ export default async function IntegrationsPage() {
       statut: i.statut as StatutIntegration,
       apercu,
       messageErreur: i.message_erreur,
+      config: (i.config as ConfigIntegration | null) ?? null,
     });
   }
 
@@ -111,6 +115,8 @@ export default async function IntegrationsPage() {
                   messageErreurInitial={donnees?.messageErreur ?? null}
                   peutEtreCrm={FOURNISSEURS_CRM_EXTERNES.includes(f.id)}
                   estCrmActifInitial={crmActif === f.id}
+                  necessiteConfig={FOURNISSEURS_NECESSITANT_CONFIG.includes(f.id)}
+                  configInitiale={donnees?.config ?? null}
                 />
               );
             })}

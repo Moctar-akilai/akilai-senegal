@@ -342,6 +342,39 @@ export async function POST(request: Request) {
       return ok(undefined);
     }
 
+    case "integration.saveNotionConfig": {
+      if (!estString(body.databaseId) || !body.databaseId.trim()) {
+        return erreur("L'identifiant de la base Notion est requis.");
+      }
+      const mapping = body.mapping;
+      if (
+        typeof mapping !== "object" ||
+        mapping === null ||
+        !estString(mapping.nom) ||
+        !mapping.nom.trim() ||
+        !estString(mapping.telephone) ||
+        !mapping.telephone.trim()
+      ) {
+        return erreur("Les colonnes Nom et Téléphone sont requises.");
+      }
+      const config = {
+        database_id: body.databaseId.trim(),
+        mapping: {
+          nom: mapping.nom.trim(),
+          telephone: mapping.telephone.trim(),
+          email: estString(mapping.email) && mapping.email.trim() ? mapping.email.trim() : null,
+          statut: estString(mapping.statut) && mapping.statut.trim() ? mapping.statut.trim() : null,
+        },
+      };
+      const { error: err } = await supabase
+        .from("integrations")
+        .update({ config })
+        .eq("gestionnaire_id", gestionnaire.id)
+        .eq("fournisseur", "notion");
+      if (err) return erreur(err.message, 500);
+      return ok(config);
+    }
+
     case "notification.markRead": {
       if (!estString(body.id)) return erreur("Requête invalide.");
       const { error: err } = await supabase

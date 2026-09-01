@@ -222,3 +222,22 @@ export const FOURNISSEURS_CLE_API: Fournisseur[] = TOUS_LES_FOURNISSEURS.filter(
 // et src/app/dashboard/integrations/page.tsx.
 export type CrmActif = "crm_akilai" | "hubspot" | "notion" | "airtable";
 export const FOURNISSEURS_CRM_EXTERNES: Fournisseur[] = ["hubspot", "notion", "airtable"];
+
+// Fournisseurs dont la connexion par clé API ne suffit pas : il faut aussi
+// pointer vers une ressource précise (une base) et faire correspondre ses
+// colonnes à nos champs internes — voir ConfigurerBaseNotionModal et
+// integrations.config (migration_011_integrations_config.sql). Notion pour
+// l'instant, structure réutilisable pour Airtable plus tard.
+export const FOURNISSEURS_NECESSITANT_CONFIG: Fournisseur[] = ["notion"];
+
+export type MappingIntegration = {
+  nom: string;
+  telephone: string;
+  email: string | null;
+  statut: string | null;
+};
+
+export type ConfigIntegration = {
+  database_id: string;
+  mapping: MappingIntegration;
+};

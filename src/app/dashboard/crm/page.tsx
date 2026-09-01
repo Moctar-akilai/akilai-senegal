@@ -3,6 +3,10 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 import { STATUT_CONTACT_BADGE, STATUT_CONTACT_LABEL, type StatutContact } from "@/lib/crm/statuts";
 import { NouveauContactModal } from "./NouveauContactModal";
+import { LogoAvecRepli } from "../integrations/LogoAvecRepli";
+import { dechiffrerCleApi } from "@/lib/integrations/chiffrement";
+import { interrogerBaseNotion, mapperPageNotionEnContact, type ContactNotion } from "@/lib/integrations/notion";
+import type { ConfigIntegration, CrmActif } from "@/lib/integrations/fournisseurs";
 
 function debutMoisISO() {
   const maintenant = new Date();
@@ -16,6 +20,138 @@ function formatDate(date: string | null) {
 
 const STATUTS: StatutContact[] = ["prospect", "contacte", "client", "inactif"];
 
+// ---------------------------------------------------------------------
+// CRM lu en direct depuis Notion (lecture seule — voir
+// src/lib/integrations/notion.ts). Rendu séparé du CRM natif ci-dessous :
+// pas les mêmes données (KPIs, recherche/filtre par statut) donc pas de
+// sens à les partager telles quelles.
+// ---------------------------------------------------------------------
+async function CrmNotion({ gestionnaireId }: { gestionnaireId: string }) {
+  const supabase = createServiceClient();
+
+  const { data: integration } = await supabase
+    .from("integrations")
+    .select("cle_api_chiffree, config")
+    .eq("gestionnaire_id", gestionnaireId)
+    .eq("fournisseur", "notion")
+    .maybeSingle();
+
+  const config = (integration?.config as ConfigIntegration | null) ?? null;
+
+  const messageConfiguration =
+    "La connexion Notion n'est pas encore configurée pour afficher un CRM. Choisissez une base et faites correspondre ses colonnes depuis Intégrations.";
+
+  if (!integration?.cle_api_chiffree || !config?.database_id || !config.mapping?.nom || !config.mapping?.telephone) {
+    return <EtatCrmNotion titre="Configuration Notion requise" message={messageConfiguration} />;
+  }
+
+  let contacts: ContactNotion[];
+  try {
+    const cleApi = dechiffrerCleApi(integration.cle_api_chiffree);
+    const pages = await interrogerBaseNotion(cleApi, config.database_id);
+    contacts = pages.map((page) => mapperPageNotionEnContact(page, config.mapping));
+  } catch (erreur) {
+    console.error("[crm] Échec de la lecture de la base Notion:", erreur);
+    return (
+      <EtatCrmNotion
+        titre="Impossible de lire la base Notion"
+        message={
+          erreur instanceof Error
+            ? erreur.message
+            : "La clé API a peut-être été révoquée, ou la base supprimée/déplacée."
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-2xl font-semibold text-encre">CRM</h1>
+      </div>
+
+      <BandeauNotion />
+
+      {contacts.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-bordure p-8 text-center text-sm text-texte-secondaire">
+          Aucune ligne trouvée dans cette base Notion.
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)]">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="border-b border-bordure text-xs font-medium uppercase tracking-wide text-texte-secondaire">
+              <tr>
+                <th className="px-4 py-3">Nom</th>
+                <th className="px-4 py-3">Téléphone</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Statut</th>
+                <th className="px-4 py-3">Dernière modification</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-bordure">
+              {contacts.map((c) => (
+                <tr key={c.id} className="hover:bg-bordure/60">
+                  <td className="px-4 py-3">
+                    <Link href={`/dashboard/crm/${c.id}`} className="font-medium text-encre hover:underline">
+                      {c.nom || `Contact sans nom (${c.telephone || c.id})`}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-texte-secondaire">{c.telephone || "—"}</td>
+                  <td className="px-4 py-3 text-texte-secondaire">{c.email || "—"}</td>
+                  <td className="px-4 py-3">
+                    {c.statut ? (
+                      <span className="rounded-full bg-neutre-pastel px-2 py-0.5 text-xs font-medium text-neutre-pastel-texte">
+                        {c.statut}
+                      </span>
+                    ) : (
+                      <span className="text-texte-secondaire">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-texte-secondaire">{formatDate(c.derniereModification)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BandeauNotion() {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-bordure bg-neutre-pastel/40 px-4 py-3">
+      <LogoAvecRepli src="/logos/notion.png" initiales="NO" />
+      <p className="text-sm text-encre">
+        Données synchronisées en direct depuis Notion — lecture seule, le statut affiché est celui de
+        Notion.
+      </p>
+    </div>
+  );
+}
+
+function EtatCrmNotion({ titre, message }: { titre: string; message: string }) {
+  return (
+    <div className="space-y-6">
+      <h1 className="font-display text-2xl font-semibold text-encre">CRM</h1>
+      <BandeauNotion />
+      <div className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-8 text-center">
+        <p className="text-sm font-medium text-encre">{titre}</p>
+        <p className="mt-1 text-sm text-texte-secondaire">{message}</p>
+        <Link
+          href="/dashboard/integrations"
+          className="mt-4 inline-block rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile"
+        >
+          Aller à Intégrations
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+// CRM natif AkilAI (table contacts) — comportement inchangé.
+// ---------------------------------------------------------------------
 export default async function CrmPage({
   searchParams,
 }: {
@@ -25,11 +161,22 @@ export default async function CrmPage({
   const recherche = (q ?? "").trim();
   const filtreStatut = statut && STATUTS.includes(statut as StatutContact) ? (statut as StatutContact) : "";
 
-  // ⚠️ Auth temporairement contournée — client service_role (contourne le
-  // RLS) au lieu du client anon, le temps que le bypass reste actif.
-  // Détails complets dans src/lib/auth/gestionnaire-actuel.ts.
+  // Client service_role (contourne le RLS) avec gestionnaire_id venant de
+  // getGestionnaireActuel() (résolu depuis la session réelle) — même
+  // architecture que le reste du dashboard.
   const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
+
+  const { data: parametresCompte } = await supabase
+    .from("parametres_compte")
+    .select("crm_actif")
+    .eq("gestionnaire_id", user.id)
+    .maybeSingle();
+  const crmActif = (parametresCompte?.crm_actif ?? "crm_akilai") as CrmActif;
+
+  if (crmActif === "notion") {
+    return <CrmNotion gestionnaireId={user.id} />;
+  }
 
   const debutMois = debutMoisISO();
 
