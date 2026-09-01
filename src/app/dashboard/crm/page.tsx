@@ -85,7 +85,7 @@ export default async function CrmPage({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
           <div key={kpi.label} className="rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-5">
-            <p className="min-h-10 text-sm text-texte-secondaire">{kpi.label}</p>
+            <p className="h-10 line-clamp-2 text-sm text-texte-secondaire">{kpi.label}</p>
             <p className="mt-2 font-display text-4xl font-semibold text-encre tabular-nums">{kpi.valeur}</p>
           </div>
         ))}
