@@ -75,7 +75,7 @@ export const CATEGORIES_INTEGRATIONS: Categorie[] = [
         id: "crm_akilai",
         nom: "CRM AkilAI",
         initiales: "AI",
-        logo: "/logos/crm-akilai.png",
+        logo: "/logos/crm-akilai.svg",
         methode: "cle_api",
         aide: {
           texte: "Où trouver ma clé API CRM AkilAI",

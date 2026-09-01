@@ -28,7 +28,7 @@ export function CrmAkilaiCard({ estActifInitial }: { estActifInitial: boolean })
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-4">
       <Link href="/dashboard/crm" className="flex min-w-0 flex-1 items-center gap-3">
-        <LogoAvecRepli src="/logos/crm-akilai.png" initiales="AI" />
+        <LogoAvecRepli src="/logos/crm-akilai.svg" initiales="AI" />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-encre">CRM AkilAI</p>
           <span
