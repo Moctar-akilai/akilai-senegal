@@ -28,11 +28,15 @@ export function LogoAvecRepli({
   }
 
   return (
+    // Boîte rectangulaire fixe (hauteur/largeur maximales cohérentes entre
+    // les cartes) plutôt qu'un cercle : object-contain garde les
+    // proportions naturelles de chaque logo à l'intérieur, sans jamais
+    // recadrer/rogner ni forcer un format carré ou circulaire.
     // eslint-disable-next-line @next/next/no-img-element -- logos externes optionnels, pas encore tous présents dans public/logos.
     <img
       src={src}
       alt=""
-      className="h-9 w-9 shrink-0 rounded-full border border-bordure object-contain"
+      className="h-9 w-16 shrink-0 rounded-md border border-bordure bg-white object-contain p-1"
       onError={() => setEnErreur(true)}
     />
   );
