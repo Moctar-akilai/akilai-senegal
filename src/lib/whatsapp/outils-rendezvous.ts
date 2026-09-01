@@ -1,4 +1,5 @@
 import type { ChatCompletionTool } from "openai/resources/chat/completions";
+import { createServiceClient } from "@/lib/supabase/service";
 import {
   obtenirConnexionGoogleCalendar,
   listerEvenements,
@@ -90,6 +91,16 @@ export const OUTILS_RENDEZ_VOUS: ChatCompletionTool[] = [
           heure_debut: { type: "string", description: "Heure de début, format HH:MM (24h)" },
           heure_fin: { type: "string", description: "Heure de fin, format HH:MM (24h)" },
           description: { type: "string", description: "Détails optionnels du rendez-vous" },
+          nom_contact: {
+            type: "string",
+            description:
+              "Nom du client, uniquement si tu l'as collecté au cours de la conversation — sera enregistré sur sa fiche CRM.",
+          },
+          email_contact: {
+            type: "string",
+            description:
+              "Email du client, uniquement si tu l'as collecté au cours de la conversation — sera enregistré sur sa fiche CRM.",
+          },
         },
         required: ["titre", "date", "heure_debut", "heure_fin"],
       },
@@ -148,11 +159,51 @@ async function outilVerifierDisponibilite(
   return JSON.stringify({ disponible: false, creneaux_libres_proches: creneaux });
 }
 
+// Reporte sur la fiche CRM (table contacts) le nom/email collectés par
+// l'assistant pendant la prise de rendez-vous — pas seulement dans les
+// détails de l'événement Google Calendar. Ne touche un champ que lorsque
+// l'assistant fournit une valeur qui diffère de ce qui est déjà enregistré
+// (vide y compris) : jamais de no-op sur une valeur déjà identique, jamais
+// d'écrasement en dehors d'une info réellement nouvelle collectée pendant
+// cet échange.
+async function mettreAJourContactSiUtile(
+  gestionnaireId: string,
+  contactId: string,
+  nomContact: string | null,
+  emailContact: string | null
+): Promise<void> {
+  if (!nomContact && !emailContact) return;
+
+  const supabase = createServiceClient();
+  const { data: contact } = await supabase
+    .from("contacts")
+    .select("nom, email")
+    .eq("id", contactId)
+    .eq("gestionnaire_id", gestionnaireId)
+    .maybeSingle();
+  if (!contact) return;
+
+  const misesAJour: Record<string, string> = {};
+  if (nomContact && nomContact !== contact.nom) misesAJour.nom = nomContact;
+  if (emailContact && emailContact !== contact.email) misesAJour.email = emailContact;
+  if (Object.keys(misesAJour).length === 0) return;
+
+  const { error } = await supabase
+    .from("contacts")
+    .update(misesAJour)
+    .eq("id", contactId)
+    .eq("gestionnaire_id", gestionnaireId);
+  if (error) {
+    console.error("[outils-rendezvous] Échec de la mise à jour de la fiche contact:", error);
+  }
+}
+
 async function outilPrendreRendezVous(
   accessToken: string,
   calendarId: string,
   args: Record<string, unknown>,
-  contactId: string
+  contactId: string,
+  gestionnaireId: string
 ): Promise<string> {
   if (!estString(args.titre) || !estString(args.date) || !estString(args.heure_debut) || !estString(args.heure_fin)) {
     return JSON.stringify({ succes: false, erreur: "titre, date, heure_debut et heure_fin sont requis." });
@@ -162,6 +213,8 @@ async function outilPrendreRendezVous(
   const heureDebut = args.heure_debut;
   const heureFin = args.heure_fin;
   const description = typeof args.description === "string" ? args.description : null;
+  const nomContact = estString(args.nom_contact) ? args.nom_contact : null;
+  const emailContact = estString(args.email_contact) ? args.email_contact : null;
 
   const evenement = await creerEvenement(accessToken, calendarId, {
     titre,
@@ -170,6 +223,8 @@ async function outilPrendreRendezVous(
     finISO: versISO(date, heureFin),
     contactId,
   });
+
+  await mettreAJourContactSiUtile(gestionnaireId, contactId, nomContact, emailContact);
 
   return JSON.stringify({
     succes: true,
@@ -258,7 +313,7 @@ export async function executerOutilRendezVous(
       case "verifier_disponibilite":
         return await outilVerifierDisponibilite(accessToken, calendarId, args);
       case "prendre_rendez_vous":
-        return await outilPrendreRendezVous(accessToken, calendarId, args, ctx.contactId);
+        return await outilPrendreRendezVous(accessToken, calendarId, args, ctx.contactId, ctx.gestionnaireId);
       case "annuler_ou_reporter_rendez_vous":
         return await outilAnnulerOuReporter(accessToken, calendarId, args, ctx.contactId);
       default:

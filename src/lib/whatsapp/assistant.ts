@@ -59,7 +59,7 @@ function construireSystemPrompt(
   }
   if (parametres.outil_prise_rdv_actif && googleCalendarConnecte) {
     outils.push(
-      "- Tu peux prendre, reporter ou annuler un rendez-vous directement via les outils fournis (verifier_disponibilite, prendre_rendez_vous, annuler_ou_reporter_rendez_vous). Vérifie TOUJOURS la disponibilité avec verifier_disponibilite avant de proposer ou de confirmer un créneau — n'invente jamais une disponibilité que tu n'as pas vérifiée. Une fois un rendez-vous pris, reporté ou annulé, confirme-le clairement au client (jour et heure)."
+      "- Tu peux prendre, reporter ou annuler un rendez-vous directement via les outils fournis (verifier_disponibilite, prendre_rendez_vous, annuler_ou_reporter_rendez_vous). Vérifie TOUJOURS la disponibilité avec verifier_disponibilite avant de proposer ou de confirmer un créneau — n'invente jamais une disponibilité que tu n'as pas vérifiée. Si tu collectes le nom et/ou l'email du client au cours de la conversation, transmets-les à prendre_rendez_vous via ses paramètres nom_contact et email_contact (pas seulement dans ton message de confirmation) afin qu'ils soient enregistrés sur sa fiche. Une fois un rendez-vous pris, reporté ou annulé, confirme-le clairement au client (jour et heure)."
     );
   } else if (parametres.outil_prise_rdv_actif) {
     outils.push(
