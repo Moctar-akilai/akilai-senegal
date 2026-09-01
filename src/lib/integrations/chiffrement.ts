@@ -8,7 +8,10 @@ import { randomBytes, createCipheriv, createDecipheriv } from "crypto";
 const ALGORITHME = "aes-256-gcm";
 const TAILLE_IV = 12; // recommandé pour GCM
 
-function cleMaitresse(): Buffer {
+// Exportée pour réutilisation hors chiffrement AES (ex. signature HMAC du
+// state OAuth Google Calendar, voir src/lib/integrations/google-calendar.ts)
+// — même secret ENCRYPTION_KEY, mécanisme cryptographique différent.
+export function cleMaitresse(): Buffer {
   const brute = process.env.ENCRYPTION_KEY;
   if (!brute) throw new Error("ENCRYPTION_KEY n'est pas configurée.");
   const cle = Buffer.from(brute, "base64");

@@ -1,15 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ModaleAVenir } from "../ModaleAVenir";
-import { CalendarGrid, type EvenementAgenda, type VueCalendrier } from "./CalendarGrid";
+import { CalendarGrid, lundiDeLaSemaine, type EvenementAgenda, type VueCalendrier } from "./CalendarGrid";
 import { EvenementModal } from "./EvenementModal";
-
-// Aucune source de données réelle pour l'instant (pas d'intégration
-// Google Calendar / Calendly branchée) : la vue reste vide, mais toute la
-// structure (grille, liste, modale de détail) est prête à recevoir de
-// vrais événements dès qu'une intégration sera connectée.
-const EVENEMENTS: EvenementAgenda[] = [];
+import { NouveauRdvModal } from "./NouveauRdvModal";
 
 function titrePeriode(vue: VueCalendrier, date: Date) {
   if (vue === "mois") {
@@ -34,36 +29,90 @@ function decaler(date: Date, vue: VueCalendrier, sens: 1 | -1) {
   return d;
 }
 
+// Période exacte couverte par la grille affichée pour cette vue — pour le
+// mois, ça inclut les jours "hors mois" affichés en tête/queue de grille
+// (voir MoisGrid dans CalendarGrid.tsx), afin que les événements qui y
+// tombent soient bien chargés eux aussi.
+function plagePourVue(vue: VueCalendrier, date: Date): [Date, Date] {
+  if (vue === "mois") {
+    const premierJourMois = new Date(date.getFullYear(), date.getMonth(), 1);
+    const debut = lundiDeLaSemaine(premierJourMois);
+    const fin = new Date(debut);
+    fin.setDate(fin.getDate() + 42);
+    return [debut, fin];
+  }
+  if (vue === "semaine") {
+    const debut = lundiDeLaSemaine(date);
+    const fin = new Date(debut);
+    fin.setDate(fin.getDate() + 7);
+    return [debut, fin];
+  }
+  const debut = new Date(date);
+  debut.setHours(0, 0, 0, 0);
+  const fin = new Date(debut);
+  fin.setDate(fin.getDate() + 1);
+  return [debut, fin];
+}
+
 export function AgendaView({ integrationConnectee }: { integrationConnectee: boolean }) {
   const [vue, setVue] = useState<"calendrier" | "liste">("calendrier");
   const [vueCalendrier, setVueCalendrier] = useState<VueCalendrier>("mois");
   const [dateActuelle, setDateActuelle] = useState(new Date());
+  const [evenements, setEvenements] = useState<EvenementAgenda[]>([]);
+  const [chargementEvenements, setChargementEvenements] = useState(false);
+  const [erreurEvenements, setErreurEvenements] = useState<string | null>(null);
   const [evenementSelectionne, setEvenementSelectionne] = useState<EvenementAgenda | null>(null);
+  const [modaleNouveauRdvOuverte, setModaleNouveauRdvOuverte] = useState(false);
   const [modaleAVenir, setModaleAVenir] = useState<{ titre: string; description: string } | null>(
     null
   );
 
+  // Ne fait aucun setState synchrone avant son premier await : appelable
+  // directement depuis un effet (voir plus bas) sans être flagué par
+  // react-hooks/set-state-in-effect au-delà du disable explicite déjà requis
+  // pour l'appel lui-même (même schéma que ConfigurerBaseNotionModal.tsx).
+  async function chargerEvenements(vueDemandee: VueCalendrier, dateDemandee: Date) {
+    setChargementEvenements(true);
+    setErreurEvenements(null);
+    const [debut, fin] = plagePourVue(vueDemandee, dateDemandee);
+    try {
+      const reponse = await fetch(
+        `/api/integrations/google-calendar/evenements?debut=${debut.toISOString()}&fin=${fin.toISOString()}`
+      );
+      const corps = await reponse.json().catch(() => null);
+      if (!reponse.ok || !corps?.ok) {
+        setErreurEvenements(corps?.error ?? "Impossible de charger les événements.");
+        setEvenements([]);
+      } else {
+        setEvenements(corps.data);
+      }
+    } catch {
+      setErreurEvenements("Impossible de contacter le serveur.");
+      setEvenements([]);
+    } finally {
+      setChargementEvenements(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!integrationConnectee) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    chargerEvenements(vueCalendrier, dateActuelle);
+  }, [integrationConnectee, vueCalendrier, dateActuelle]);
+
   const evenementsGroupesParDate = useMemo(() => {
     const groupes = new Map<string, EvenementAgenda[]>();
-    for (const e of EVENEMENTS) {
+    for (const e of evenements) {
       const jour = new Date(e.debut).toISOString().slice(0, 10);
       groupes.set(jour, [...(groupes.get(jour) ?? []), e]);
     }
     return Array.from(groupes.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, []);
+  }, [evenements]);
 
   function ouvrirModaleConnexion(nom: string) {
     setModaleAVenir({
       titre: `Connexion à ${nom}`,
       description: `Cette intégration sera bientôt disponible. Vous pourrez bientôt connecter ${nom} directement depuis AkilAI.`,
-    });
-  }
-
-  function ouvrirModaleNouveauRdv() {
-    setModaleAVenir({
-      titre: "Nouveau rendez-vous",
-      description:
-        "La création de rendez-vous sera disponible dès qu'une intégration agenda (Google Calendar ou Calendly) sera connectée.",
     });
   }
 
@@ -73,8 +122,9 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
         <h1 className="font-display text-2xl font-semibold text-encre">Agenda</h1>
         <button
           type="button"
-          onClick={ouvrirModaleNouveauRdv}
-          className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile"
+          disabled={!integrationConnectee}
+          onClick={() => setModaleNouveauRdvOuverte(true)}
+          className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile disabled:opacity-50"
         >
           + Nouveau RDV
         </button>
@@ -86,13 +136,12 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
             Connectez Google Calendar ou Calendly pour voir votre agenda ici.
           </p>
           <div className="flex justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => ouvrirModaleConnexion("Google Calendar")}
+            <a
+              href="/api/integrations/google-calendar/autoriser"
               className="rounded-lg bg-argile-forte px-4 py-2 text-sm font-medium text-white hover:bg-argile"
             >
               Connecter Google Calendar
-            </button>
+            </a>
             <button
               type="button"
               onClick={() => ouvrirModaleConnexion("Calendly")}
@@ -101,6 +150,12 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
               Connecter Calendly
             </button>
           </div>
+        </div>
+      )}
+
+      {erreurEvenements && (
+        <div className="rounded-lg border border-erreur-pastel bg-erreur-pastel/40 px-4 py-3 text-sm text-erreur-pastel-texte">
+          {erreurEvenements}
         </div>
       )}
 
@@ -133,6 +188,9 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
             <span className="ml-2 text-sm font-medium capitalize text-encre">
               {titrePeriode(vueCalendrier, dateActuelle)}
             </span>
+            {chargementEvenements && (
+              <span className="text-xs text-texte-secondaire">Chargement…</span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -181,7 +239,7 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
           <CalendarGrid
             vue={vueCalendrier}
             dateActuelle={dateActuelle}
-            evenements={EVENEMENTS}
+            evenements={evenements}
             onSelectEvent={setEvenementSelectionne}
           />
         ) : (
@@ -192,7 +250,7 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
               </p>
             ) : (
               <ul className="space-y-4">
-                {evenementsGroupesParDate.map(([jour, evenements]) => (
+                {evenementsGroupesParDate.map(([jour, evenementsJour]) => (
                   <li key={jour}>
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-texte-secondaire">
                       {new Date(jour).toLocaleDateString("fr-FR", {
@@ -202,7 +260,7 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
                       })}
                     </p>
                     <ul className="space-y-1.5">
-                      {evenements.map((e) => (
+                      {evenementsJour.map((e) => (
                         <li key={e.id}>
                           <button
                             onClick={() => setEvenementSelectionne(e)}
@@ -222,6 +280,12 @@ export function AgendaView({ integrationConnectee }: { integrationConnectee: boo
       </div>
 
       <EvenementModal evenement={evenementSelectionne} onFermer={() => setEvenementSelectionne(null)} />
+
+      <NouveauRdvModal
+        ouvert={modaleNouveauRdvOuverte}
+        onFermer={() => setModaleNouveauRdvOuverte(false)}
+        onCree={() => chargerEvenements(vueCalendrier, dateActuelle)}
+      />
 
       <ModaleAVenir
         ouvert={modaleAVenir !== null}

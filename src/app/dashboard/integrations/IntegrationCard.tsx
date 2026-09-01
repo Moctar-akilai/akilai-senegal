@@ -39,6 +39,7 @@ export function IntegrationCard({
   logo,
   methode,
   aide,
+  urlAutorisation,
   statutInitial,
   apercuInitial,
   messageErreurInitial,
@@ -53,6 +54,7 @@ export function IntegrationCard({
   logo: string;
   methode: MethodeConnexion;
   aide?: { texte: string; url: string };
+  urlAutorisation?: string;
   statutInitial: StatutIntegration;
   apercuInitial: string | null;
   messageErreurInitial: string | null;
@@ -175,6 +177,13 @@ export function IntegrationCard({
             >
               Déconnecter
             </button>
+          ) : methode === "oauth" && urlAutorisation ? (
+            <a
+              href={urlAutorisation}
+              className="inline-block rounded-lg bg-argile-forte px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-argile"
+            >
+              {statut === "erreur" ? "Réessayer" : "Connecter"}
+            </a>
           ) : (
             <button
               type="button"
@@ -233,14 +242,14 @@ export function IntegrationCard({
             setModaleOuverte(false);
           }}
         />
-      ) : (
+      ) : methode === "oauth_bientot" ? (
         <ModaleAVenir
           ouvert={modaleOuverte}
           titre={`Connexion à ${nom}`}
           description={`Cette intégration sera bientôt disponible. Vous pourrez bientôt connecter ${nom} directement depuis AkilAI.`}
           onFermer={() => setModaleOuverte(false)}
         />
-      )}
+      ) : null}
 
       {necessiteConfig && (
         <ConfigurerBaseNotionModal

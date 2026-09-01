@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
+import { estGoogleCalendarConnecte } from "@/lib/integrations/statut";
 import { WhatsappIAForm } from "./WhatsappIAForm";
 
 export default async function WhatsappIAPage() {
@@ -12,13 +13,16 @@ export default async function WhatsappIAPage() {
   const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
-  const { data: parametresCompte } = await supabase
-    .from("parametres_compte")
-    .select(
-      "numero_whatsapp, assistant_nom, langue, assistant_prompt, assistant_ton, outil_faq_actif, outil_prise_rdv_actif, outil_transfert_humain_actif, outil_infos_pratiques_actif"
-    )
-    .eq("gestionnaire_id", user.id)
-    .single();
+  const [{ data: parametresCompte }, googleCalendarConnecte] = await Promise.all([
+    supabase
+      .from("parametres_compte")
+      .select(
+        "numero_whatsapp, assistant_nom, langue, assistant_prompt, assistant_ton, outil_faq_actif, outil_prise_rdv_actif, outil_transfert_humain_actif, outil_infos_pratiques_actif"
+      )
+      .eq("gestionnaire_id", user.id)
+      .single(),
+    estGoogleCalendarConnecte(supabase, user.id),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -27,6 +31,7 @@ export default async function WhatsappIAPage() {
       {parametresCompte ? (
         <WhatsappIAForm
           numeroWhatsapp={parametresCompte.numero_whatsapp}
+          googleCalendarConnecte={googleCalendarConnecte}
           parametresInitiaux={{
             assistant_nom: parametresCompte.assistant_nom,
             langue: parametresCompte.langue,

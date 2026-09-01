@@ -22,7 +22,7 @@ function memeJour(a: Date, b: Date) {
   );
 }
 
-function lundiDeLaSemaine(date: Date) {
+export function lundiDeLaSemaine(date: Date) {
   const d = new Date(date);
   const jour = d.getDay(); // 0=dimanche ... 6=samedi
   const decalage = jour === 0 ? -6 : 1 - jour;

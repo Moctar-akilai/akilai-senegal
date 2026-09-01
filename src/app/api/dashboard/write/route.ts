@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
+import { dechiffrerCleApi } from "@/lib/integrations/chiffrement";
+import { revoquerToken, type ConfigGoogleCalendar } from "@/lib/integrations/google-calendar";
 
 // ============================================================================
 // Route d'écriture générique du dashboard
@@ -266,6 +268,26 @@ export async function POST(request: Request) {
 
     case "integration.disconnect": {
       if (!estString(body.fournisseur)) return erreur("Requête invalide.");
+
+      if (body.fournisseur === "google_calendar") {
+        const { data: integration } = await supabase
+          .from("integrations")
+          .select("config")
+          .eq("gestionnaire_id", gestionnaire.id)
+          .eq("fournisseur", "google_calendar")
+          .maybeSingle();
+        const config = (integration?.config as ConfigGoogleCalendar | null) ?? null;
+        if (config?.access_token_chiffre) {
+          try {
+            await revoquerToken(dechiffrerCleApi(config.access_token_chiffre));
+          } catch (erreurRevocation) {
+            // Best-effort : la déconnexion côté AkilAI doit réussir même si
+            // Google refuse la révocation (token déjà expiré/révoqué...).
+            console.error("[write] Échec de la révocation du token Google Calendar:", erreurRevocation);
+          }
+        }
+      }
+
       const { error: err } = await supabase
         .from("integrations")
         .update({
@@ -274,6 +296,10 @@ export async function POST(request: Request) {
           cle_api_chiffree: null,
           derniere_verification: null,
           message_erreur: null,
+          // Les tokens Google Calendar n'ont plus de sens une fois révoqués
+          // (contrairement à la config Notion, une simple correspondance de
+          // colonnes réutile au reconnect) : on les efface entièrement.
+          ...(body.fournisseur === "google_calendar" ? { config: null } : {}),
         })
         .eq("gestionnaire_id", gestionnaire.id)
         .eq("fournisseur", body.fournisseur);

@@ -17,9 +17,11 @@ export type Fournisseur =
 export type StatutIntegration = "non_connecte" | "connecte" | "erreur";
 
 // "cle_api" : connexion par clé API, gérée par ConnexionCleApiModal +
-// /api/integrations/connecter. "oauth_bientot" : nécessite un vrai flux
-// OAuth pas encore implémenté, garde la modale "Bientôt disponible".
-export type MethodeConnexion = "cle_api" | "oauth_bientot";
+// /api/integrations/connecter. "oauth" : vrai flux OAuth implémenté, le
+// bouton "Connecter" navigue vers `urlAutorisation` (voir google_calendar
+// ci-dessous). "oauth_bientot" : nécessite un vrai flux OAuth pas encore
+// implémenté, garde la modale "Bientôt disponible".
+export type MethodeConnexion = "cle_api" | "oauth" | "oauth_bientot";
 
 type DefinitionFournisseur = {
   id: Fournisseur;
@@ -35,6 +37,9 @@ type DefinitionFournisseur = {
   // Texte + lien affichés dans la modale de connexion par clé API, propres
   // à chaque fournisseur compatible.
   aide?: { texte: string; url: string };
+  // Route qui lance le flux OAuth (méthode "oauth" uniquement) — une
+  // navigation complète du navigateur, pas un fetch, voir IntegrationCard.
+  urlAutorisation?: string;
 };
 
 type Categorie = {
@@ -51,7 +56,8 @@ export const CATEGORIES_INTEGRATIONS: Categorie[] = [
         nom: "Google Calendar",
         initiales: "GC",
         logo: "/logos/google-calendar.png",
-        methode: "oauth_bientot",
+        methode: "oauth",
+        urlAutorisation: "/api/integrations/google-calendar/autoriser",
       },
       {
         id: "calendly",

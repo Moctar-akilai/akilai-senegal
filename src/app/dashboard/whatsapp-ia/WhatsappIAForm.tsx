@@ -27,13 +27,15 @@ const OUTILS_ACTIFS: {
   { cle: "outil_infos_pratiques_actif", label: "Infos pratiques (horaires, localisation…)" },
 ];
 
-const OUTILS_A_VENIR = ["Google Calendar", "Calendly", "CRM AkilAI"];
+const OUTILS_A_VENIR = ["Calendly", "CRM AkilAI"];
 
 export function WhatsappIAForm({
   numeroWhatsapp,
+  googleCalendarConnecte,
   parametresInitiaux,
 }: {
   numeroWhatsapp: string | null;
+  googleCalendarConnecte: boolean;
   parametresInitiaux: ParametresAssistant;
 }) {
   const [parametres, setParametres] = useState(parametresInitiaux);
@@ -145,6 +147,23 @@ export function WhatsappIAForm({
             <span className="text-sm text-encre">{outil.label}</span>
           </label>
         ))}
+
+        <label className={`flex items-center gap-2 ${googleCalendarConnecte ? "" : "opacity-60"}`}>
+          <input
+            type="checkbox"
+            checked={googleCalendarConnecte}
+            disabled
+            className="h-4 w-4 accent-argile-forte"
+          />
+          <span className={`text-sm ${googleCalendarConnecte ? "text-encre" : "text-texte-secondaire"}`}>
+            Gestion de rendez-vous (Google Calendar)
+          </span>
+          {!googleCalendarConnecte && (
+            <span className="rounded-full bg-attention-pastel px-2 py-0.5 text-xs font-medium text-attention-pastel-texte">
+              Connectez Google Calendar dans Intégrations pour activer
+            </span>
+          )}
+        </label>
 
         {OUTILS_A_VENIR.map((nom) => (
           <label key={nom} className="flex items-center gap-2 opacity-60">

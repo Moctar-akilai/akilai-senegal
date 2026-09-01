@@ -1,7 +1,9 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { OUTILS_RENDEZ_VOUS, executerOutilRendezVous } from "./outils-rendezvous";
 
 const MODEL = "gpt-4o";
+const MAX_TOURS_OUTILS = 5; // garde-fou contre une boucle d'appels d'outils
 
 // Le client n'est instancié qu'au premier appel réel (jamais au chargement
 // du module) : Next.js exécute le module au moment du build ("Collecting
@@ -31,18 +33,35 @@ export type MessageHistorique = {
   contenu: string | null;
 };
 
+export type ContexteAssistant = {
+  gestionnaireId: string;
+  contactId: string;
+  // Vérifié par l'appelant (voir le webhook) avant de générer la réponse :
+  // les outils de rendez-vous ne sont exposés à OpenAI que si Google
+  // Calendar est réellement connecté pour ce gestionnaire.
+  googleCalendarConnecte: boolean;
+};
+
 const TON_LABELS: Record<ParametresAssistant["assistant_ton"], string> = {
   professionnel: "professionnel et courtois",
   amical: "amical et chaleureux",
   decontracte: "décontracté, familier mais respectueux",
 };
 
-function construireSystemPrompt(parametres: ParametresAssistant, contactNom: string | null) {
+function construireSystemPrompt(
+  parametres: ParametresAssistant,
+  contactNom: string | null,
+  googleCalendarConnecte: boolean
+) {
   const outils: string[] = [];
   if (parametres.outil_faq_actif) {
     outils.push("- Tu peux répondre aux questions fréquentes sur l'entreprise, ses produits ou ses services.");
   }
-  if (parametres.outil_prise_rdv_actif) {
+  if (parametres.outil_prise_rdv_actif && googleCalendarConnecte) {
+    outils.push(
+      "- Tu peux prendre, reporter ou annuler un rendez-vous directement via les outils fournis (verifier_disponibilite, prendre_rendez_vous, annuler_ou_reporter_rendez_vous). Vérifie TOUJOURS la disponibilité avec verifier_disponibilite avant de proposer ou de confirmer un créneau — n'invente jamais une disponibilité que tu n'as pas vérifiée. Une fois un rendez-vous pris, reporté ou annulé, confirme-le clairement au client (jour et heure)."
+    );
+  } else if (parametres.outil_prise_rdv_actif) {
     outils.push(
       "- Tu peux aider le client à prendre rendez-vous : propose-lui d'indiquer ses disponibilités et confirme que la demande sera traitée."
     );
@@ -77,7 +96,8 @@ function construireSystemPrompt(parametres: ParametresAssistant, contactNom: str
 export async function genererReponseAssistant(
   parametres: ParametresAssistant,
   contactNom: string | null,
-  historique: MessageHistorique[]
+  historique: MessageHistorique[],
+  contexte: ContexteAssistant
 ): Promise<string> {
   const messagesHistorique: ChatCompletionMessageParam[] = historique
     .filter((m) => m.contenu && m.contenu.trim().length > 0)
@@ -87,45 +107,71 @@ export async function genererReponseAssistant(
     }));
 
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: construireSystemPrompt(parametres, contactNom) },
+    { role: "system", content: construireSystemPrompt(parametres, contactNom, contexte.googleCalendarConnecte) },
     ...messagesHistorique,
   ];
 
-  let completion;
-  try {
-    completion = await getOpenAIClient().chat.completions.create({
-      model: MODEL,
-      max_tokens: 500,
-      messages,
-    });
-  } catch (erreur) {
-    console.error(
-      "[assistant] Échec de l'appel OpenAI chat.completions.create (modèle:",
-      MODEL,
-      ", nb messages historique:",
-      messagesHistorique.length,
-      "):",
-      erreur
-    );
-    throw erreur;
+  const outilsDisponibles =
+    parametres.outil_prise_rdv_actif && contexte.googleCalendarConnecte ? OUTILS_RENDEZ_VOUS : undefined;
+
+  // Boucle d'appels d'outils : tant que le modèle demande un outil, on
+  // l'exécute et on relance un tour avec le résultat, jusqu'à une réponse
+  // texte finale (ou MAX_TOURS_OUTILS atteint, garde-fou contre une boucle).
+  for (let tour = 0; tour < MAX_TOURS_OUTILS; tour++) {
+    let completion;
+    try {
+      completion = await getOpenAIClient().chat.completions.create({
+        model: MODEL,
+        max_tokens: 500,
+        messages,
+        ...(outilsDisponibles ? { tools: outilsDisponibles } : {}),
+      });
+    } catch (erreur) {
+      console.error(
+        "[assistant] Échec de l'appel OpenAI chat.completions.create (modèle:",
+        MODEL,
+        ", nb messages historique:",
+        messagesHistorique.length,
+        "):",
+        erreur
+      );
+      throw erreur;
+    }
+
+    const choix = completion.choices[0];
+    if (choix?.finish_reason === "content_filter") {
+      console.error("[assistant] Réponse OpenAI bloquée par le content filter.");
+      return "Désolé, je ne peux pas répondre à cette demande. Un membre de l'équipe reviendra vers vous rapidement.";
+    }
+
+    const appelsOutils = choix?.message?.tool_calls;
+    if (appelsOutils && appelsOutils.length > 0) {
+      messages.push(choix.message);
+      for (const appel of appelsOutils) {
+        if (appel.type !== "function") continue;
+        const resultat = await executerOutilRendezVous(appel.function.name, appel.function.arguments, {
+          gestionnaireId: contexte.gestionnaireId,
+          contactId: contexte.contactId,
+        });
+        messages.push({ role: "tool", tool_call_id: appel.id, content: resultat });
+      }
+      continue;
+    }
+
+    if (!choix?.message?.content?.trim()) {
+      console.error(
+        "[assistant] Réponse OpenAI vide ou inattendue, finish_reason:",
+        choix?.finish_reason,
+        "completion complète:",
+        JSON.stringify(completion)
+      );
+    }
+
+    return choix?.message?.content?.trim() || "Désolé, je n'ai pas bien compris. Pouvez-vous reformuler ?";
   }
 
-  const choix = completion.choices[0];
-  if (choix?.finish_reason === "content_filter") {
-    console.error("[assistant] Réponse OpenAI bloquée par le content filter.");
-    return "Désolé, je ne peux pas répondre à cette demande. Un membre de l'équipe reviendra vers vous rapidement.";
-  }
-
-  if (!choix?.message?.content?.trim()) {
-    console.error(
-      "[assistant] Réponse OpenAI vide ou inattendue, finish_reason:",
-      choix?.finish_reason,
-      "completion complète:",
-      JSON.stringify(completion)
-    );
-  }
-
-  return choix?.message?.content?.trim() || "Désolé, je n'ai pas bien compris. Pouvez-vous reformuler ?";
+  console.error("[assistant] Nombre maximal de tours d'outils atteint sans réponse finale.");
+  return "Désolé, je rencontre une difficulté technique pour traiter votre demande. Un membre de l'équipe reviendra vers vous rapidement.";
 }
 
 // Transcrit un message vocal WhatsApp via Whisper (OpenAI) pour que

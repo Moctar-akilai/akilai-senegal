@@ -10,6 +10,7 @@ import {
   transcrireAudio,
   type ParametresAssistant,
 } from "@/lib/whatsapp/assistant";
+import { estGoogleCalendarConnecte } from "@/lib/integrations/statut";
 import { estDansPlageAutorisee, MESSAGE_HORS_HORAIRES } from "@/lib/automatisations/programmation";
 
 export const runtime = "nodejs";
@@ -258,12 +259,15 @@ export async function POST(request: NextRequest) {
 
   const historiqueChronologique = (historique ?? []).slice().reverse();
 
+  const googleCalendarConnecte = await estGoogleCalendarConnecte(supabase, gestionnaireId);
+
   let reponse: string;
   try {
     reponse = await genererReponseAssistant(
       parametres as unknown as ParametresAssistant,
       contactNom,
-      historiqueChronologique
+      historiqueChronologique,
+      { gestionnaireId, contactId, googleCalendarConnecte }
     );
   } catch (erreurAssistant) {
     // C'est le point le plus probable d'échec silencieux : n'importe quelle

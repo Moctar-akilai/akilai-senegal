@@ -20,12 +20,17 @@ type LigneIntegration = {
   config: ConfigIntegration | null;
 };
 
-export default async function IntegrationsPage() {
+export default async function IntegrationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ google_calendar?: string; message?: string }>;
+}) {
   // ⚠️ Auth temporairement contournée — client service_role (contourne le
   // RLS) au lieu du client anon, le temps que le bypass reste actif.
   // Détails complets dans src/lib/auth/gestionnaire-actuel.ts.
   const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
+  const params = await searchParams;
 
   const [{ data: integrations }, { data: parametresCompte }] = await Promise.all([
     supabase
@@ -66,6 +71,17 @@ export default async function IntegrationsPage() {
 
   return (
     <div className="space-y-8">
+      {params.google_calendar === "succes" && (
+        <div className="rounded-lg border border-succes-pastel bg-succes-pastel/40 px-4 py-3 text-sm text-succes-pastel-texte">
+          Google Calendar connecté avec succès.
+        </div>
+      )}
+      {params.google_calendar === "erreur" && (
+        <div className="rounded-lg border border-erreur-pastel bg-erreur-pastel/40 px-4 py-3 text-sm text-erreur-pastel-texte">
+          Échec de la connexion à Google Calendar{params.message ? ` : ${params.message}` : "."}
+        </div>
+      )}
+
       <h1 className="font-display text-2xl font-semibold text-encre">Intégrations</h1>
 
       <section>
@@ -110,6 +126,7 @@ export default async function IntegrationsPage() {
                   logo={f.logo}
                   methode={f.methode}
                   aide={f.aide}
+                  urlAutorisation={f.urlAutorisation}
                   statutInitial={donnees?.statut ?? "non_connecte"}
                   apercuInitial={donnees?.apercu ?? null}
                   messageErreurInitial={donnees?.messageErreur ?? null}
