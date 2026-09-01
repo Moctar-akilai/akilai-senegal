@@ -1,19 +1,12 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-// Fraunces (display, éditorial) pour les titres de page et les chiffres
-// clés (KPIs) — utilisée avec retenue. Inter (sans humaniste) porte le
-// reste de l'interface.
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+// Space Grotesk pour toute l'interface (titres, KPIs et corps de texte).
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -23,10 +16,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${inter.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${spaceGrotesk.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
