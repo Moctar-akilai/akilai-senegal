@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Users } from "lucide-react";
 import { ecrireDashboard } from "@/lib/dashboard/ecrire";
-import { LogoAvecRepli } from "./LogoAvecRepli";
 
 // CRM AkilAI est le CRM natif (/dashboard/crm), actif par défaut — pas une
 // intégration au sens des autres cartes (pas de clé API, jamais
@@ -28,7 +28,12 @@ export function CrmAkilaiCard({ estActifInitial }: { estActifInitial: boolean })
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-bordure bg-carte shadow-[var(--shadow-carte)] p-4">
       <Link href="/dashboard/crm" className="flex min-w-0 flex-1 items-center gap-3">
-        <LogoAvecRepli src="/logos/crm-akilai.svg" initiales="AI" />
+        {/* Pas un logo externe : même icône (Users, lucide-react) et même
+            style que le lien "CRM" de la sidebar (voir NavLinks.tsx), sur
+            une tuile indigo-profond plutôt qu'un fichier logo. */}
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-profond">
+          <Users className="h-4 w-4 text-blanc-casse" strokeWidth={1.75} aria-hidden="true" />
+        </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-encre">CRM AkilAI</p>
           <span

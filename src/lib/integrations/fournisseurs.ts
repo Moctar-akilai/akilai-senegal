@@ -75,7 +75,9 @@ export const CATEGORIES_INTEGRATIONS: Categorie[] = [
         id: "crm_akilai",
         nom: "CRM AkilAI",
         initiales: "AI",
-        logo: "/logos/crm-akilai.svg",
+        // Jamais lu : page.tsx rend crm_akilai via <CrmAkilaiCard>, qui a
+        // sa propre icône (Users de lucide-react), pas un fichier logo.
+        logo: "",
         methode: "cle_api",
         aide: {
           texte: "Où trouver ma clé API CRM AkilAI",
