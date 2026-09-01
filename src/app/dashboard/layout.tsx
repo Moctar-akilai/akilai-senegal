@@ -20,11 +20,10 @@ const NB_NOTIFICATIONS_AFFICHEES = 20;
 export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  // ⚠️ Auth temporairement contournée — client service_role (contourne le
-  // RLS) au lieu du client anon, le temps que le bypass reste actif.
-  // Détails complets dans src/lib/auth/gestionnaire-actuel.ts. Ce layout
-  // englobe tout le dashboard, donc le nom affiché dans la sidebar et la
-  // cloche de notifications étaient eux aussi cassés par RLS.
+  // Client service_role (contourne le RLS) avec gestionnaire_id venant de
+  // getGestionnaireActuel() (résolu depuis la session réelle) — même
+  // architecture que le reste du dashboard, voir
+  // src/lib/auth/gestionnaire-actuel.ts.
   const supabase = createServiceClient();
   const user = await getGestionnaireActuel();
 
@@ -75,21 +74,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {plan}
           </span>
 
-          {/* Authentification contournée (voir gestionnaire-actuel.ts) :
-              pas de vraie session à clôturer pour l'instant. Bouton
-              désactivé + info-bulle plutôt qu'un bouton actif qui ne
-              ferait rien silencieusement au clic. À reconnecter à
-              /api/auth/logout (form action="/api/auth/logout"
-              method="post") une fois l'authentification réelle
-              réactivée. */}
-          <button
-            type="button"
-            disabled
-            title="Authentification désactivée temporairement"
-            className="mt-3 w-full rounded-lg border border-white/10 py-2 text-sm font-medium text-nav-inactif disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Se déconnecter
-          </button>
+          <form action="/api/auth/logout" method="post" className="mt-3">
+            <button
+              type="submit"
+              className="w-full rounded-lg border border-white/10 py-2 text-sm font-medium text-nav-inactif transition-colors hover:bg-white/5 hover:text-blanc-casse"
+            >
+              Se déconnecter
+            </button>
+          </form>
         </div>
       </aside>
 

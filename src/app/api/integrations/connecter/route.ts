@@ -5,12 +5,10 @@ import { FOURNISSEURS_CLE_API, type Fournisseur } from "@/lib/integrations/fourn
 import { chiffrerCleApi, apercuMasqueCleApi } from "@/lib/integrations/chiffrement";
 import { verifierCleApi } from "@/lib/integrations/verification";
 
-// ⚠️ Contournement temporaire de l'authentification — même raison que
-// /api/dashboard/write (voir le commentaire en haut de ce fichier) :
-// service_role côté serveur avec gestionnaire_id venant explicitement de
-// getGestionnaireActuel(), jamais une valeur fournie par le client. À
-// fusionner dans /api/dashboard/write ou migrer vers une Server Action une
-// fois la vraie authentification réactivée.
+// Même architecture que /api/dashboard/write (voir le commentaire en haut
+// de ce fichier) : service_role côté serveur avec gestionnaire_id venant
+// explicitement de getGestionnaireActuel() (résolu depuis la session
+// Supabase réelle), jamais une valeur fournie par le client.
 //
 // La clé API en clair ne transite que dans le corps de cette requête ; elle
 // est chiffrée (AES-256-GCM, src/lib/integrations/chiffrement.ts) avant
@@ -37,7 +35,12 @@ export async function POST(request: Request) {
     return erreur("Ce fournisseur ne se connecte pas par clé API.");
   }
 
-  const gestionnaire = await getGestionnaireActuel();
+  let gestionnaire: { id: string };
+  try {
+    gestionnaire = await getGestionnaireActuel();
+  } catch {
+    return erreur("Non authentifié.", 401);
+  }
   const supabase = createServiceClient();
 
   const verification = await verifierCleApi(fournisseur, cleApi);

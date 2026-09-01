@@ -3,30 +3,17 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getGestionnaireActuel } from "@/lib/auth/gestionnaire-actuel";
 
 // ============================================================================
-// ⚠️ CONTOURNEMENT TEMPORAIRE DE L'AUTHENTIFICATION — À RETIRER ⚠️
+// Route d'écriture générique du dashboard
 // ============================================================================
-// Toutes les écritures du dashboard (formulaires, toggles, création de
-// ressources) passaient par le client Supabase anon côté navigateur
-// (@/lib/supabase/client), donc soumises au RLS — bloquées de la même
-// façon que les lectures l'étaient tant que le bypass d'authentification
-// (voir src/lib/auth/gestionnaire-actuel.ts) est actif : auth.uid() est
-// null côté base sans vraie session.
-//
 // La clé service_role ne doit jamais être exposée au navigateur : cette
-// route API sert donc d'intermédiaire. Chaque composant client envoie une
-// action à cette seule route, qui exécute l'écriture ici côté serveur avec
-// createServiceClient() (contourne le RLS) et gestionnaire_id venant
-// explicitement de getGestionnaireActuel() — jamais une valeur fournie par
-// le client — pour scoper chaque écriture au bon compte.
-//
-// Pour réactiver l'authentification normale :
-//   1. Chaque composant client peut revenir à des appels directs via le
-//      client anon (@/lib/supabase/client) — RLS redevient fiable une fois
-//      qu'une vraie session existe — ou, mieux, être migré vers des Server
-//      Actions / routes API classiques utilisant le client anon +
-//      auth.getUser() côté serveur (approche standard Next.js, à préférer
-//      à ce shim générique).
-//   2. Supprimer ce fichier une fois toutes les écritures migrées.
+// route API sert donc d'intermédiaire pour toutes les écritures du
+// dashboard (formulaires, toggles, création de ressources). Chaque
+// composant client envoie une action à cette seule route, qui exécute
+// l'écriture ici côté serveur avec createServiceClient() et
+// gestionnaire_id venant explicitement de getGestionnaireActuel() (résolu
+// depuis la session Supabase réelle, jamais une valeur fournie par le
+// client) — ce qui scope chaque écriture au bon compte indépendamment de
+// RLS, en défense en profondeur.
 // ============================================================================
 
 type Reponse<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
@@ -56,7 +43,12 @@ export async function POST(request: Request) {
     return erreur("Requête invalide.");
   }
 
-  const gestionnaire = await getGestionnaireActuel();
+  let gestionnaire: { id: string };
+  try {
+    gestionnaire = await getGestionnaireActuel();
+  } catch {
+    return erreur("Non authentifié.", 401);
+  }
   const supabase = createServiceClient();
   const action = body.action as string;
 
