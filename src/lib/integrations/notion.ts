@@ -1,4 +1,4 @@
-import type { MappingIntegration } from "./fournisseurs";
+import type { ConfigIntegration, MappingIntegration } from "./fournisseurs";
 
 // Client minimal pour l'API Notion (lecture seule) — utilisé pour la
 // configuration de la base (liste des propriétés) et la lecture en direct
@@ -52,17 +52,48 @@ async function messageErreurNotion(reponse: Response): Promise<string> {
   return corps?.message ?? `Notion a répondu ${reponse.status}.`;
 }
 
+type ProprieteNotionBrute = { name: string; type: string; [type: string]: unknown };
+
+// databases.retrieve — schéma brut complet, partagé par
+// recupererProprietesBaseNotion (liste nom+type, pour la modale "Configurer
+// la base") et recupererSchemaProprietes (nom+type+options, pour l'écriture).
+async function recupererProprietesBrutes(
+  cleApi: string,
+  databaseId: string
+): Promise<Record<string, ProprieteNotionBrute>> {
+  const reponse = await appelNotion(`https://api.notion.com/v1/databases/${databaseId}`, cleApi);
+  if (!reponse.ok) throw new Error(await messageErreurNotion(reponse));
+  const donnees = await reponse.json();
+  return (donnees.properties ?? {}) as Record<string, ProprieteNotionBrute>;
+}
+
 // databases.retrieve — liste les propriétés (colonnes) d'une base, pour la
 // modale "Configurer la base".
 export async function recupererProprietesBaseNotion(
   cleApi: string,
   databaseId: string
 ): Promise<ProprieteNotion[]> {
-  const reponse = await appelNotion(`https://api.notion.com/v1/databases/${databaseId}`, cleApi);
-  if (!reponse.ok) throw new Error(await messageErreurNotion(reponse));
-  const donnees = await reponse.json();
-  const proprietes = (donnees.properties ?? {}) as Record<string, { name: string; type: string }>;
+  const proprietes = await recupererProprietesBrutes(cleApi, databaseId);
   return Object.values(proprietes).map((p) => ({ nom: p.name, type: p.type }));
+}
+
+export type SchemaPropriete = { type: string; premiereOption?: string };
+
+// Schéma indexé par nom de propriété, avec pour les select/status la
+// première option disponible (utile pour choisir un statut de départ à la
+// création d'une page) — recupererProprietesBaseNotion ne suffit pas pour
+// ça, elle ne retourne que {nom, type}.
+export async function recupererSchemaProprietes(
+  cleApi: string,
+  databaseId: string
+): Promise<Record<string, SchemaPropriete>> {
+  const proprietes = await recupererProprietesBrutes(cleApi, databaseId);
+  const schema: Record<string, SchemaPropriete> = {};
+  for (const [nom, p] of Object.entries(proprietes)) {
+    const details = p[p.type] as { options?: { name: string }[] } | undefined;
+    schema[nom] = { type: p.type, premiereOption: details?.options?.[0]?.name };
+  }
+  return schema;
 }
 
 // databases.query — toutes les lignes d'une base (pagine automatiquement,
@@ -138,4 +169,153 @@ export function mapperPageNotionEnContact(page: PageNotion, mapping: MappingInte
     statut: mapping.statut ? extraireValeurPropriete(page.properties[mapping.statut]) : "",
     derniereModification: page.last_edited_time ?? null,
   };
+}
+
+// ============================================================================
+// Écriture (synchronisation du contact collecté lors d'une prise de RDV —
+// voir src/lib/whatsapp/outils-rendezvous.ts). Symétrique à
+// extraireValeurPropriete côté lecture.
+// ============================================================================
+
+function construireValeurPropriete(type: string, valeur: string): Record<string, unknown> {
+  switch (type) {
+    case "title":
+      return { title: [{ text: { content: valeur } }] };
+    case "phone_number":
+      return { phone_number: valeur };
+    case "email":
+      return { email: valeur };
+    case "select":
+      return { select: { name: valeur } };
+    case "status":
+      return { status: { name: valeur } };
+    case "rich_text":
+    default:
+      return { rich_text: [{ text: { content: valeur } }] };
+  }
+}
+
+function construireFiltreEgalite(type: string, valeur: string): Record<string, unknown> {
+  switch (type) {
+    case "phone_number":
+      return { phone_number: { equals: valeur } };
+    case "email":
+      return { email: { equals: valeur } };
+    case "title":
+      return { title: { equals: valeur } };
+    case "select":
+      return { select: { equals: valeur } };
+    case "status":
+      return { status: { equals: valeur } };
+    case "rich_text":
+    default:
+      return { rich_text: { equals: valeur } };
+  }
+}
+
+// databases.query avec filtre — cherche la première page dont la propriété
+// `nomPropriete` correspond exactement à `valeur` (utilisé pour retrouver
+// un contact par téléphone). Retourne null si aucune correspondance.
+async function rechercherPageParValeur(
+  cleApi: string,
+  databaseId: string,
+  nomPropriete: string,
+  typePropriete: string,
+  valeur: string
+): Promise<PageNotion | null> {
+  const reponse = await appelNotion(`https://api.notion.com/v1/databases/${databaseId}/query`, cleApi, {
+    method: "POST",
+    body: JSON.stringify({
+      filter: { property: nomPropriete, ...construireFiltreEgalite(typePropriete, valeur) },
+      page_size: 1,
+    }),
+  });
+  if (!reponse.ok) throw new Error(await messageErreurNotion(reponse));
+  const donnees = await reponse.json();
+  const resultats = (donnees.results ?? []) as PageNotion[];
+  return resultats[0] ?? null;
+}
+
+// pages.update — met à jour uniquement les propriétés fournies.
+async function mettreAJourPageNotion(
+  cleApi: string,
+  pageId: string,
+  proprietes: Record<string, unknown>
+): Promise<void> {
+  const reponse = await appelNotion(`https://api.notion.com/v1/pages/${pageId}`, cleApi, {
+    method: "PATCH",
+    body: JSON.stringify({ properties: proprietes }),
+  });
+  if (!reponse.ok) throw new Error(await messageErreurNotion(reponse));
+}
+
+// pages.create — nouvelle ligne dans la base.
+async function creerPageNotion(
+  cleApi: string,
+  databaseId: string,
+  proprietes: Record<string, unknown>
+): Promise<void> {
+  const reponse = await appelNotion(`https://api.notion.com/v1/pages`, cleApi, {
+    method: "POST",
+    body: JSON.stringify({ parent: { database_id: databaseId }, properties: proprietes }),
+  });
+  if (!reponse.ok) throw new Error(await messageErreurNotion(reponse));
+}
+
+// Crée ou met à jour, dans la base Notion configurée comme CRM actif, la
+// page correspondant à ce téléphone — avec le nom/email les plus à jour
+// connus côté natif. Appelée après une prise de rendez-vous où l'assistant
+// a collecté nom/email (voir src/lib/whatsapp/outils-rendezvous.ts) ;
+// laisse volontairement remonter ses erreurs, à l'appelant de décider de ne
+// jamais bloquer la prise de RDV dessus.
+export async function synchroniserContactNotion(
+  cleApi: string,
+  config: ConfigIntegration,
+  contact: { telephone: string; nom: string | null; email: string | null }
+): Promise<void> {
+  const schema = await recupererSchemaProprietes(cleApi, config.database_id);
+  const schemaTelephone = schema[config.mapping.telephone];
+  if (!schemaTelephone) {
+    throw new Error(`Colonne "${config.mapping.telephone}" introuvable dans la base Notion.`);
+  }
+
+  const pageExistante = await rechercherPageParValeur(
+    cleApi,
+    config.database_id,
+    config.mapping.telephone,
+    schemaTelephone.type,
+    contact.telephone
+  );
+
+  const proprietes: Record<string, unknown> = {};
+  const schemaNom = schema[config.mapping.nom];
+  if (contact.nom && schemaNom) {
+    proprietes[config.mapping.nom] = construireValeurPropriete(schemaNom.type, contact.nom);
+  }
+  const schemaEmail = config.mapping.email ? schema[config.mapping.email] : undefined;
+  if (contact.email && config.mapping.email && schemaEmail) {
+    proprietes[config.mapping.email] = construireValeurPropriete(schemaEmail.type, contact.email);
+  }
+
+  if (pageExistante) {
+    if (Object.keys(proprietes).length > 0) {
+      await mettreAJourPageNotion(cleApi, pageExistante.id, proprietes);
+    }
+    return;
+  }
+
+  // Nouvelle page : renseigne aussi le téléphone (sert à la retrouver la
+  // prochaine fois) et, si la colonne statut est mappée, une valeur de
+  // départ raisonnable — la première option si select/status, sinon une
+  // chaîne simple pour un champ texte.
+  proprietes[config.mapping.telephone] = construireValeurPropriete(schemaTelephone.type, contact.telephone);
+  if (config.mapping.statut) {
+    const schemaStatut = schema[config.mapping.statut];
+    if (schemaStatut) {
+      const valeurDepart = schemaStatut.premiereOption ?? "Nouveau";
+      proprietes[config.mapping.statut] = construireValeurPropriete(schemaStatut.type, valeurDepart);
+    }
+  }
+
+  await creerPageNotion(cleApi, config.database_id, proprietes);
 }

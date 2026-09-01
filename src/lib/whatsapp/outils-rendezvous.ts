@@ -9,6 +9,9 @@ import {
   supprimerEvenement,
   type EvenementGoogle,
 } from "@/lib/integrations/google-calendar";
+import { dechiffrerCleApi } from "@/lib/integrations/chiffrement";
+import { synchroniserContactNotion } from "@/lib/integrations/notion";
+import type { ConfigIntegration } from "@/lib/integrations/fournisseurs";
 
 // Outils de prise de rendez-vous exposés à l'assistant WhatsApp (function
 // calling OpenAI) — seulement quand Google Calendar est connecté pour le
@@ -159,13 +162,56 @@ async function outilVerifierDisponibilite(
   return JSON.stringify({ disponible: false, creneaux_libres_proches: creneaux });
 }
 
-// Reporte sur la fiche CRM (table contacts) le nom/email collectés par
-// l'assistant pendant la prise de rendez-vous — pas seulement dans les
-// détails de l'événement Google Calendar. Ne touche un champ que lorsque
-// l'assistant fournit une valeur qui diffère de ce qui est déjà enregistré
-// (vide y compris) : jamais de no-op sur une valeur déjà identique, jamais
-// d'écrasement en dehors d'une info réellement nouvelle collectée pendant
-// cet échange.
+// Si crm_actif = 'notion' et qu'une config Notion complète existe, répercute
+// le nom/téléphone/email vers la base Notion (cherche par téléphone, met à
+// jour si trouvée sinon crée). Pour crm_akilai ou tout fournisseur sans
+// écriture construite (Airtable) : rien à faire, le contact natif suffit
+// déjà. Best-effort strict — n'importe quelle erreur (clé révoquée, base
+// modifiée...) est loguée mais ne remonte jamais à l'appelant : la prise de
+// RDV et la mise à jour du contact natif restent la priorité.
+async function synchroniserCrmExterneSiActif(
+  supabase: ReturnType<typeof createServiceClient>,
+  gestionnaireId: string,
+  contact: { telephone: string; nom: string | null; email: string | null }
+): Promise<void> {
+  try {
+    const { data: parametres } = await supabase
+      .from("parametres_compte")
+      .select("crm_actif")
+      .eq("gestionnaire_id", gestionnaireId)
+      .maybeSingle();
+    if (parametres?.crm_actif !== "notion") return;
+
+    const { data: integration } = await supabase
+      .from("integrations")
+      .select("cle_api_chiffree, config")
+      .eq("gestionnaire_id", gestionnaireId)
+      .eq("fournisseur", "notion")
+      .maybeSingle();
+
+    const config = (integration?.config as ConfigIntegration | null) ?? null;
+    if (!integration?.cle_api_chiffree || !config?.database_id || !config.mapping?.nom || !config.mapping?.telephone) {
+      return;
+    }
+
+    const cleApi = dechiffrerCleApi(integration.cle_api_chiffree);
+    await synchroniserContactNotion(cleApi, config, contact);
+  } catch (erreur) {
+    console.error(
+      "[outils-rendezvous] Échec de la synchronisation du contact vers le CRM externe (Notion) :",
+      erreur
+    );
+  }
+}
+
+// Reporte sur la fiche CRM (table contacts, et sur le CRM externe actif le
+// cas échéant — voir synchroniserCrmExterneSiActif) le nom/email collectés
+// par l'assistant pendant la prise de rendez-vous — pas seulement dans les
+// détails de l'événement Google Calendar. Ne touche un champ natif que
+// lorsque l'assistant fournit une valeur qui diffère de ce qui est déjà
+// enregistré (vide y compris) : jamais de no-op sur une valeur déjà
+// identique, jamais d'écrasement en dehors d'une info réellement nouvelle
+// collectée pendant cet échange.
 async function mettreAJourContactSiUtile(
   gestionnaireId: string,
   contactId: string,
@@ -177,7 +223,7 @@ async function mettreAJourContactSiUtile(
   const supabase = createServiceClient();
   const { data: contact } = await supabase
     .from("contacts")
-    .select("nom, email")
+    .select("nom, email, telephone")
     .eq("id", contactId)
     .eq("gestionnaire_id", gestionnaireId)
     .maybeSingle();
@@ -186,16 +232,23 @@ async function mettreAJourContactSiUtile(
   const misesAJour: Record<string, string> = {};
   if (nomContact && nomContact !== contact.nom) misesAJour.nom = nomContact;
   if (emailContact && emailContact !== contact.email) misesAJour.email = emailContact;
-  if (Object.keys(misesAJour).length === 0) return;
 
-  const { error } = await supabase
-    .from("contacts")
-    .update(misesAJour)
-    .eq("id", contactId)
-    .eq("gestionnaire_id", gestionnaireId);
-  if (error) {
-    console.error("[outils-rendezvous] Échec de la mise à jour de la fiche contact:", error);
+  if (Object.keys(misesAJour).length > 0) {
+    const { error } = await supabase
+      .from("contacts")
+      .update(misesAJour)
+      .eq("id", contactId)
+      .eq("gestionnaire_id", gestionnaireId);
+    if (error) {
+      console.error("[outils-rendezvous] Échec de la mise à jour de la fiche contact:", error);
+    }
   }
+
+  await synchroniserCrmExterneSiActif(supabase, gestionnaireId, {
+    telephone: contact.telephone,
+    nom: misesAJour.nom ?? contact.nom,
+    email: misesAJour.email ?? contact.email,
+  });
 }
 
 async function outilPrendreRendezVous(
