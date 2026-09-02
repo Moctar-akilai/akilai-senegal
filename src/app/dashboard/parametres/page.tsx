@@ -12,7 +12,11 @@ export default async function ParametresPage() {
 
   const [{ data: profil }, { data: parametresCompte }] = await Promise.all([
     supabase.from("profils").select("nom, telephone").eq("id", user.id).single(),
-    supabase.from("parametres_compte").select("numero_whatsapp").eq("gestionnaire_id", user.id).single(),
+    supabase
+      .from("parametres_compte")
+      .select("numero_whatsapp, whatsapp_mode_connexion")
+      .eq("gestionnaire_id", user.id)
+      .single(),
   ]);
 
   return (
@@ -25,6 +29,9 @@ export default async function ParametresPage() {
           nomInitial={profil?.nom ?? ""}
           telephoneInitial={profil?.telephone ?? ""}
           numeroWhatsappInitial={parametresCompte?.numero_whatsapp ?? null}
+          whatsappModeConnexionInitial={
+            (parametresCompte?.whatsapp_mode_connexion as "manuel" | "embedded_signup" | undefined) ?? "manuel"
+          }
         />
       </section>
 

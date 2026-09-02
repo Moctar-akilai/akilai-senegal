@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { ecrireDashboard } from "@/lib/dashboard/ecrire";
+import { WhatsappEmbeddedSignup } from "./WhatsappEmbeddedSignup";
 
 export function CompteForm({
   nomInitial,
   telephoneInitial,
   numeroWhatsappInitial,
+  whatsappModeConnexionInitial,
 }: {
   nomInitial: string;
   telephoneInitial: string;
   numeroWhatsappInitial: string | null;
+  whatsappModeConnexionInitial: "manuel" | "embedded_signup";
 }) {
   const [nom, setNom] = useState(nomInitial);
   const [telephone, setTelephone] = useState(telephoneInitial);
@@ -76,8 +79,12 @@ export function CompteForm({
         />
         <p className="mt-1 text-xs text-texte-secondaire">
           Numéro utilisé pour identifier les messages destinés à ce compte (affiché en lecture
-          seule dans WhatsApp &amp; IA).
+          seule dans WhatsApp &amp; IA). Rempli automatiquement en mode Embedded Signup ci-dessous.
         </p>
+        <WhatsappEmbeddedSignup
+          modeConnexionInitial={whatsappModeConnexionInitial}
+          numeroWhatsappInitial={numeroWhatsappInitial}
+        />
       </div>
 
       {message && (
