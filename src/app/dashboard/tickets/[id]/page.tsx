@@ -13,10 +13,6 @@ import {
 import { TicketPrioriteForm } from "./TicketPrioriteForm";
 import { TicketReplyForm } from "./TicketReplyForm";
 
-// TODO: quand le statut d'un message 'support' est ajouté depuis le
-// backoffice, envoyer un email de notification au gestionnaire via Resend,
-// sur son email de compte.
-
 function formatHeure(date: string) {
   return new Date(date).toLocaleString("fr-FR", {
     day: "2-digit",
@@ -44,6 +40,16 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     .maybeSingle();
 
   if (!ticket) notFound();
+
+  // Le gestionnaire consulte son ticket : redescend lu_par_gestionnaire à
+  // true (remonté à false par l'admin à chaque nouveau message support,
+  // voir /api/admin/write). Fire-and-forget, sans impact sur le rendu de
+  // la page si l'écriture échoue.
+  await supabase
+    .from("tickets")
+    .update({ lu_par_gestionnaire: true })
+    .eq("id", id)
+    .eq("gestionnaire_id", user.id);
 
   const automatisation = Array.isArray(ticket.automatisations)
     ? ticket.automatisations[0]
