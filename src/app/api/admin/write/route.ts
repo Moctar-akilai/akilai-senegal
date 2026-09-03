@@ -5,6 +5,7 @@ import { getAdminActuel } from "@/lib/auth/admin-actuel";
 import { envoyerEmailReponseTicket } from "@/lib/email/resend";
 import { ajouterUnMois, genererNumeroFacture } from "@/lib/admin/facturation";
 import { STATUTS_LEAD } from "@/lib/admin/leads";
+import { POSTES_INFRA } from "@/lib/admin/finances";
 
 // ============================================================================
 // Route d'écriture générique du backoffice admin
@@ -43,6 +44,13 @@ function estDateISO(v: unknown): v is string {
 
 function estMontantValide(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v) && v > 0;
+}
+
+// Distinct de estMontantValide : un poste de coût d'infra ou une dépense
+// d'acquisition peut légitimement valoir 0 (ex: twilio non utilisé un
+// mois donné), contrairement à un montant d'abonnement/facture.
+function estMontantNonNegatif(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v) && v >= 0;
 }
 
 export async function POST(request: Request) {
@@ -421,6 +429,40 @@ export async function POST(request: Request) {
       if (erreurLead) return erreur(erreurLead.message, 500);
 
       return ok({ gestionnaireId: authData.user.id, motDePasse });
+    }
+
+    case "finances.saveCoutsInfra": {
+      if (!estDateISO(body.mois) || typeof body.montants !== "object" || body.montants === null) {
+        return erreur("Requête invalide.");
+      }
+      const montants = body.montants as Record<string, unknown>;
+      for (const poste of POSTES_INFRA) {
+        if (!estMontantNonNegatif(montants[poste])) {
+          return erreur(`Montant invalide pour le poste "${poste}".`);
+        }
+      }
+      const lignes = POSTES_INFRA.map((poste) => ({
+        mois: body.mois,
+        poste,
+        montant: montants[poste] as number,
+      }));
+      const { error: err } = await supabase.from("couts_infrastructure").upsert(lignes, { onConflict: "mois,poste" });
+      if (err) return erreur(err.message, 500);
+      return ok(undefined);
+    }
+
+    case "finances.saveDepenseAcquisition": {
+      if (!estDateISO(body.mois) || !estMontantNonNegatif(body.montant)) {
+        return erreur("Requête invalide.");
+      }
+      const { error: err } = await supabase
+        .from("depenses_acquisition")
+        .upsert(
+          { mois: body.mois, montant: body.montant, updated_at: new Date().toISOString() },
+          { onConflict: "mois" }
+        );
+      if (err) return erreur(err.message, 500);
+      return ok(undefined);
     }
 
     default:
