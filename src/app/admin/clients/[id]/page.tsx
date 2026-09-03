@@ -45,6 +45,8 @@ export default async function AdminFicheClientPage({ params }: { params: Promise
     { count: nbMessagesCeMois },
     { count: nbTicketsOuverts },
     { data: historiqueBrut },
+    { data: factures },
+    { data: abonnement },
   ] = await Promise.all([
     supabase.auth.admin.getUserById(id),
     supabase.from("parametres_compte").select("plan").eq("gestionnaire_id", id).maybeSingle(),
@@ -71,6 +73,12 @@ export default async function AdminFicheClientPage({ params }: { params: Promise
       .eq("gestionnaire_id", id)
       .order("created_at", { ascending: false })
       .limit(NB_MESSAGES_HISTORIQUE),
+    supabase
+      .from("factures")
+      .select("id, numero, montant, statut, date_emission")
+      .eq("gestionnaire_id", id)
+      .order("date_emission", { ascending: false }),
+    supabase.from("abonnements").select("date_prochain_paiement").eq("gestionnaire_id", id).maybeSingle(),
   ]);
 
   const email = authUser?.user?.email ?? "";
@@ -88,6 +96,10 @@ export default async function AdminFicheClientPage({ params }: { params: Promise
       contactTelephone: (contact?.telephone as string) ?? "",
     };
   });
+
+  const facturesPayees = (factures ?? []).filter((f) => f.statut === "payee");
+  const totalEncaisse = facturesPayees.reduce((total, f) => total + f.montant, 0);
+  const dernierPaiement = facturesPayees[0]?.date_emission ?? null; // déjà trié date_emission desc
 
   const kpis = [
     { label: "Contacts (total)", valeur: nbContacts ?? 0 },
@@ -156,6 +168,19 @@ export default async function AdminFicheClientPage({ params }: { params: Promise
         }))}
         historique={historique}
         notesInitiales={profil.notes ?? ""}
+        paiements={{
+          totalEncaisse,
+          nbPaiements: facturesPayees.length,
+          dernierPaiement,
+          prochainPaiement: abonnement?.date_prochain_paiement ?? null,
+          factures: (factures ?? []).map((f) => ({
+            id: f.id,
+            numero: f.numero,
+            montant: f.montant,
+            statut: f.statut as "en_attente" | "payee" | "en_retard",
+            dateEmission: f.date_emission,
+          })),
+        }}
       />
     </div>
   );

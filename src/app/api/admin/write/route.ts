@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminActuel } from "@/lib/auth/admin-actuel";
 import { envoyerEmailReponseTicket } from "@/lib/email/resend";
+import { ajouterUnMois, genererNumeroFacture } from "@/lib/admin/facturation";
 
 // ============================================================================
 // Route d'écriture générique du backoffice admin
@@ -31,6 +32,14 @@ const PRIORITES_TICKET = ["basse", "normale", "haute", "urgente"] as const;
 
 function estString(v: unknown): v is string {
   return typeof v === "string" && v.trim().length > 0;
+}
+
+function estDateISO(v: unknown): v is string {
+  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+}
+
+function estMontantValide(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v) && v > 0;
 }
 
 export async function POST(request: Request) {
@@ -153,6 +162,121 @@ export async function POST(request: Request) {
           erreurEmail
         );
       }
+
+      return ok(undefined);
+    }
+
+    case "abonnement.create": {
+      if (
+        !estString(body.gestionnaireId) ||
+        !estMontantValide(body.montantMensuel) ||
+        !estDateISO(body.dateSignature) ||
+        !estDateISO(body.dateProchainPaiement)
+      ) {
+        return erreur("Requête invalide.");
+      }
+      const { error: err } = await supabase.from("abonnements").insert({
+        gestionnaire_id: body.gestionnaireId,
+        montant_mensuel: body.montantMensuel,
+        date_signature: body.dateSignature,
+        date_prochain_paiement: body.dateProchainPaiement,
+      });
+      if (err) {
+        // Contrainte unique sur gestionnaire_id : un seul abonnement par client.
+        if (err.code === "23505") return erreur("Ce client a déjà un abonnement enregistré.");
+        return erreur(err.message, 500);
+      }
+      return ok(undefined);
+    }
+
+    case "abonnement.updateMontant": {
+      if (!estString(body.gestionnaireId) || !estMontantValide(body.montantMensuel)) {
+        return erreur("Requête invalide.");
+      }
+      const { error: err } = await supabase
+        .from("abonnements")
+        .update({ montant_mensuel: body.montantMensuel, updated_at: new Date().toISOString() })
+        .eq("gestionnaire_id", body.gestionnaireId);
+      if (err) return erreur(err.message, 500);
+      return ok(undefined);
+    }
+
+    case "abonnement.marquerPaye": {
+      if (!estString(body.gestionnaireId) || !estDateISO(body.dateEncaissement)) {
+        return erreur("Requête invalide.");
+      }
+      if (body.montant !== undefined && !estMontantValide(body.montant)) {
+        return erreur("Montant invalide.");
+      }
+
+      const { data: abonnement } = await supabase
+        .from("abonnements")
+        .select("montant_mensuel")
+        .eq("gestionnaire_id", body.gestionnaireId)
+        .maybeSingle();
+      if (!abonnement) return erreur("Abonnement introuvable.", 404);
+
+      const montant = estMontantValide(body.montant) ? body.montant : abonnement.montant_mensuel;
+      const annee = Number(body.dateEncaissement.slice(0, 4));
+
+      // Numérotation simple par comptage (pas de séquence dédiée) : ce
+      // backoffice n'a qu'un seul admin, le risque de collision concurrente
+      // est négligeable pour ce chantier.
+      const { count: nbFacturesAnnee } = await supabase
+        .from("factures")
+        .select("id", { count: "exact", head: true })
+        .like("numero", `FACT-${annee}-%`);
+      const numero = genererNumeroFacture(annee, (nbFacturesAnnee ?? 0) + 1);
+
+      const { error: erreurFacture } = await supabase.from("factures").insert({
+        gestionnaire_id: body.gestionnaireId,
+        numero,
+        montant,
+        statut: "payee",
+        date_emission: body.dateEncaissement,
+        // Pas de date d'échéance distincte pour un paiement déjà encaissé —
+        // la colonne est NOT NULL, on reprend la date d'encaissement.
+        date_echeance: body.dateEncaissement,
+      });
+      if (erreurFacture) return erreur(erreurFacture.message, 500);
+
+      const { error: erreurAbonnement } = await supabase
+        .from("abonnements")
+        .update({
+          date_prochain_paiement: ajouterUnMois(body.dateEncaissement),
+          statut_paiement: "a_jour",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("gestionnaire_id", body.gestionnaireId);
+      if (erreurAbonnement) return erreur(erreurAbonnement.message, 500);
+
+      return ok({ numero });
+    }
+
+    case "abonnement.resilier": {
+      if (!estString(body.gestionnaireId) || !estString(body.raison)) {
+        return erreur("La raison de la résiliation est requise.");
+      }
+
+      const { error: erreurAbonnement } = await supabase
+        .from("abonnements")
+        .update({ statut_paiement: "resilie", updated_at: new Date().toISOString() })
+        .eq("gestionnaire_id", body.gestionnaireId);
+      if (erreurAbonnement) return erreur(erreurAbonnement.message, 500);
+
+      const { data: profil } = await supabase
+        .from("profils")
+        .select("notes")
+        .eq("id", body.gestionnaireId)
+        .maybeSingle();
+      const ligneResiliation = `[Résiliation ${new Date().toLocaleDateString("fr-FR")}] ${body.raison.trim()}`;
+      const notes = profil?.notes ? `${profil.notes}\n${ligneResiliation}` : ligneResiliation;
+
+      const { error: erreurNotes } = await supabase
+        .from("profils")
+        .update({ notes })
+        .eq("id", body.gestionnaireId);
+      if (erreurNotes) return erreur(erreurNotes.message, 500);
 
       return ok(undefined);
     }
