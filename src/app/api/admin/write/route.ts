@@ -1,8 +1,10 @@
+import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminActuel } from "@/lib/auth/admin-actuel";
 import { envoyerEmailReponseTicket } from "@/lib/email/resend";
 import { ajouterUnMois, genererNumeroFacture } from "@/lib/admin/facturation";
+import { STATUTS_LEAD } from "@/lib/admin/leads";
 
 // ============================================================================
 // Route d'écriture générique du backoffice admin
@@ -29,6 +31,7 @@ function ok<T>(data: T) {
 const STATUTS_AUTOMATISATION = ["actif", "inactif"] as const;
 const STATUTS_TICKET = ["ouvert", "en_cours", "resolu", "ferme"] as const;
 const PRIORITES_TICKET = ["basse", "normale", "haute", "urgente"] as const;
+const PLANS_ESTIMES = ["Essentiel", "Croissance", "Pro"] as const;
 
 function estString(v: unknown): v is string {
   return typeof v === "string" && v.trim().length > 0;
@@ -279,6 +282,145 @@ export async function POST(request: Request) {
       if (erreurNotes) return erreur(erreurNotes.message, 500);
 
       return ok(undefined);
+    }
+
+    case "lead.create": {
+      if (!estString(body.nom)) return erreur("Le nom est requis.");
+      if (body.planEstime !== undefined && body.planEstime !== null && !PLANS_ESTIMES.includes(body.planEstime)) {
+        return erreur("Plan estimé invalide.");
+      }
+      const { error: err } = await supabase.from("leads").insert({
+        nom: body.nom.trim(),
+        entreprise: estString(body.entreprise) ? body.entreprise.trim() : null,
+        telephone: estString(body.telephone) ? body.telephone.trim() : null,
+        email: estString(body.email) ? body.email.trim() : null,
+        source: estString(body.source) ? body.source.trim() : null,
+        plan_estime: body.planEstime ?? null,
+      });
+      if (err) return erreur(err.message, 500);
+      return ok(undefined);
+    }
+
+    case "lead.update": {
+      if (!estString(body.leadId) || !estString(body.nom)) return erreur("Requête invalide.");
+      if (body.planEstime !== undefined && body.planEstime !== null && !PLANS_ESTIMES.includes(body.planEstime)) {
+        return erreur("Plan estimé invalide.");
+      }
+      const { error: err } = await supabase
+        .from("leads")
+        .update({
+          nom: body.nom.trim(),
+          entreprise: estString(body.entreprise) ? body.entreprise.trim() : null,
+          telephone: estString(body.telephone) ? body.telephone.trim() : null,
+          email: estString(body.email) ? body.email.trim() : null,
+          source: estString(body.source) ? body.source.trim() : null,
+          plan_estime: body.planEstime ?? null,
+          notes: estString(body.notes) ? body.notes.trim() : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", body.leadId);
+      if (err) return erreur(err.message, 500);
+      return ok(undefined);
+    }
+
+    case "lead.updateStatut": {
+      if (!estString(body.leadId) || !STATUTS_LEAD.includes(body.statut)) {
+        return erreur("Requête invalide.");
+      }
+      // 'perdu' passe toujours par lead.marquerPerdu (raison obligatoire) —
+      // jamais par ce chemin, même en cas d'appel direct à l'API.
+      if (body.statut === "perdu") return erreur("Utilisez lead.marquerPerdu pour passer un lead à 'Perdu'.");
+      const { error: err } = await supabase
+        .from("leads")
+        .update({ statut: body.statut, updated_at: new Date().toISOString() })
+        .eq("id", body.leadId);
+      if (err) return erreur(err.message, 500);
+      return ok(undefined);
+    }
+
+    case "lead.marquerPerdu": {
+      if (!estString(body.leadId) || !estString(body.raison)) {
+        return erreur("La raison de la perte est requise.");
+      }
+      const { error: err } = await supabase
+        .from("leads")
+        .update({ statut: "perdu", raison_perte: body.raison.trim(), updated_at: new Date().toISOString() })
+        .eq("id", body.leadId);
+      if (err) return erreur(err.message, 500);
+      return ok(undefined);
+    }
+
+    case "lead.convertir": {
+      if (
+        !estString(body.leadId) ||
+        !estString(body.email) ||
+        !estString(body.nom) ||
+        !estString(body.telephone)
+      ) {
+        return erreur("Email, nom et téléphone sont requis.");
+      }
+
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("id, statut, plan_estime, gestionnaire_id_converti")
+        .eq("id", body.leadId)
+        .maybeSingle();
+      if (!lead) return erreur("Lead introuvable.", 404);
+      if (lead.statut !== "gagne") {
+        return erreur("Seul un lead au statut 'Gagné' peut être converti en client.");
+      }
+      // Garde-fou serveur : empêche une double conversion (double clic, deux
+      // onglets, ou état local du Kanban pas encore resynchronisé côté
+      // client) qui créerait deux comptes pour le même lead.
+      if (lead.gestionnaire_id_converti) {
+        return erreur("Ce lead a déjà été converti en client.");
+      }
+
+      // 1. Crée le compte Supabase Auth via l'API admin (service_role) —
+      // mot de passe généré aléatoirement, renvoyé une seule fois à
+      // l'admin pour transmission au client.
+      const motDePasse = randomBytes(9).toString("base64url");
+      const { data: authData, error: erreurAuth } = await supabase.auth.admin.createUser({
+        email: body.email.trim(),
+        password: motDePasse,
+        email_confirm: true,
+      });
+      if (erreurAuth || !authData.user) {
+        return erreur(erreurAuth?.message ?? "Échec de la création du compte.", 500);
+      }
+
+      // 2. insert profils -> cascade automatique vers parametres_compte +
+      // l'automatisation "Assistant WhatsApp" par défaut, via le trigger
+      // existant (migration_002/migration_010) — même mécanisme que pour
+      // toute création manuelle de compte jusqu'ici.
+      const { error: erreurProfil } = await supabase.from("profils").insert({
+        id: authData.user.id,
+        nom: body.nom.trim(),
+        telephone: body.telephone.trim(),
+      });
+      if (erreurProfil) {
+        // Le compte Auth existe déjà à ce stade sans profil applicatif : on
+        // le supprime pour ne pas laisser un compte orphelin inutilisable.
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        return erreur(erreurProfil.message, 500);
+      }
+
+      // 3. Si un plan a été estimé sur le lead, l'applique au nouveau
+      // compte plutôt que de laisser le défaut 'Essentiel'.
+      if (lead.plan_estime) {
+        await supabase
+          .from("parametres_compte")
+          .update({ plan: lead.plan_estime })
+          .eq("gestionnaire_id", authData.user.id);
+      }
+
+      const { error: erreurLead } = await supabase
+        .from("leads")
+        .update({ gestionnaire_id_converti: authData.user.id, updated_at: new Date().toISOString() })
+        .eq("id", body.leadId);
+      if (erreurLead) return erreur(erreurLead.message, 500);
+
+      return ok({ gestionnaireId: authData.user.id, motDePasse });
     }
 
     default:

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, LifeBuoy, Receipt, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, LifeBuoy, Receipt, Handshake, type LucideIcon } from "lucide-react";
 
 const LIENS: { href: string; label: string; icone: LucideIcon }[] = [
   { href: "/admin", label: "Vue d'ensemble", icone: LayoutDashboard },
   { href: "/admin/clients", label: "Clients", icone: Users },
   { href: "/admin/tickets", label: "Support", icone: LifeBuoy },
+  { href: "/admin/crm", label: "CRM", icone: Handshake },
   { href: "/admin/facturation", label: "Facturation & Paiements", icone: Receipt },
 ];
 
