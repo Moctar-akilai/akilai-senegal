@@ -7,9 +7,9 @@ const COULEUR_GRILLE = "#E8E2D6"; // bordure
 const COULEUR_AXE = "#6E6A60"; // texte secondaire
 
 const PLAN_COULEURS: Record<string, string> = {
-  Starter: "#C9C2B4", // sable foncé neutre
-  Business: "#A45628", // argile forte
-  Premium: "#1B2440", // indigo profond
+  Essentiel: "#C9C2B4", // sable foncé neutre
+  Croissance: "#A45628", // argile forte
+  Pro: "#1B2440", // indigo profond
 };
 
 export function MessagesBarChart({ data }: { data: { date: string; messages: number }[] }) {

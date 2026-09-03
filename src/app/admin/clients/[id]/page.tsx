@@ -74,7 +74,7 @@ export default async function AdminFicheClientPage({ params }: { params: Promise
   ]);
 
   const email = authUser?.user?.email ?? "";
-  const plan = parametresCompte?.plan ?? "Starter";
+  const plan = parametresCompte?.plan ?? "Essentiel";
   const estActif = (automatisations ?? []).some((a) => a.statut === "actif");
 
   const historique = (historiqueBrut ?? []).map((m) => {

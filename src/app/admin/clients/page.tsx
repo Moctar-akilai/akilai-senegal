@@ -69,7 +69,7 @@ export default async function AdminClientsPage({
     id: p.id,
     nom: p.nom || "—",
     email: emailParId.get(p.id) ?? "",
-    plan: planParId.get(p.id) ?? "Starter",
+    plan: planParId.get(p.id) ?? "Essentiel",
     actif: gestionnairesActifs.has(p.id),
     createdAt: p.created_at,
     nbContacts: contactsParId.get(p.id) ?? 0,

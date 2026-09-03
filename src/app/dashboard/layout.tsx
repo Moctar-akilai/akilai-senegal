@@ -28,14 +28,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const user = await getGestionnaireActuel();
 
   let nom = "";
-  let plan = "Starter";
+  let plan = "Essentiel";
   if (user) {
     const [{ data: profil }, { data: parametresCompte }] = await Promise.all([
       supabase.from("profils").select("nom").eq("id", user.id).single(),
       supabase.from("parametres_compte").select("plan").eq("gestionnaire_id", user.id).maybeSingle(),
     ]);
     nom = profil?.nom ?? "";
-    plan = parametresCompte?.plan ?? "Starter";
+    plan = parametresCompte?.plan ?? "Essentiel";
   }
 
   const { data: notifications } = await supabase
