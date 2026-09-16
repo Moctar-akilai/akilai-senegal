@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { StatutTicket, PrioriteTicket } from "@/lib/crm/statuts";
 import { ClientTabs } from "./ClientTabs";
+import { LimiteAssistantsForm } from "./LimiteAssistantsForm";
 
 const NB_MESSAGES_HISTORIQUE = 30;
 
@@ -49,7 +50,7 @@ export default async function AdminFicheClientPage({ params }: { params: Promise
     { data: abonnement },
   ] = await Promise.all([
     supabase.auth.admin.getUserById(id),
-    supabase.from("parametres_compte").select("plan").eq("gestionnaire_id", id).maybeSingle(),
+    supabase.from("parametres_compte").select("plan, limite_assistants").eq("gestionnaire_id", id).maybeSingle(),
     supabase.from("automatisations").select("id, nom, type, statut, description").eq("gestionnaire_id", id),
     supabase
       .from("tickets")
@@ -139,6 +140,9 @@ export default async function AdminFicheClientPage({ params }: { params: Promise
           </div>
         </div>
         <p className="mt-1 text-xs text-texte-secondaire">Client depuis le {formatDate(profil.created_at)}</p>
+        <div className="mt-3 border-t border-bordure pt-3">
+          <LimiteAssistantsForm gestionnaireId={id} limiteInitiale={parametresCompte?.limite_assistants ?? 1} />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

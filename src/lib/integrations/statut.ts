@@ -1,6 +1,6 @@
 import type { createServiceClient } from "@/lib/supabase/service";
 
-// Petit helper partagé (webhook WhatsApp + page whatsapp-ia) : est-ce que
+// Petit helper partagé (webhook WhatsApp + pages assistants) : est-ce que
 // Google Calendar est connecté et utilisable pour ce gestionnaire ?
 export async function estGoogleCalendarConnecte(
   supabase: ReturnType<typeof createServiceClient>,

@@ -78,26 +78,39 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServiceClient();
 
-  const { data: parametres, error: erreurParametres } = await supabase
-    .from("parametres_compte")
+  // Le routage se fait désormais directement via automatisations.numero_whatsapp
+  // (un gestionnaire peut avoir plusieurs assistants, chacun avec son propre
+  // numéro) plutôt que via parametres_compte.numero_whatsapp — voir
+  // migration_018. Tout le prompt/ton/outils vient de CETTE ligne précise.
+  const { data: automatisation, error: erreurAutomatisation } = await supabase
+    .from("automatisations")
     .select(
-      "gestionnaire_id, assistant_whatsapp_actif, assistant_nom, assistant_prompt, assistant_ton, outil_faq_actif, outil_prise_rdv_actif, outil_transfert_humain_actif, outil_infos_pratiques_actif"
+      "id, gestionnaire_id, statut, nom, prompt, ton, outil_faq_actif, outil_prise_rdv_actif, outil_transfert_humain_actif, outil_infos_pratiques_actif"
     )
     .eq("numero_whatsapp", to)
     .maybeSingle();
 
   // Numéro non configuré côté AkilAI : on ne peut pas savoir à quel
-  // compte router ce message.
-  if (!parametres) {
+  // compte/assistant router ce message.
+  if (!automatisation) {
     console.error(
-      "[webhook] Aucun parametres_compte trouvé pour le numéro entrant To=",
+      "[webhook] Aucune automatisation trouvée pour le numéro entrant To=",
       to,
-      erreurParametres ? `(erreur Supabase: ${erreurParametres.message})` : "(aucune ligne ne correspond)"
+      erreurAutomatisation ? `(erreur Supabase: ${erreurAutomatisation.message})` : "(aucune ligne ne correspond)"
     );
     return twiml();
   }
 
-  const gestionnaireId = parametres.gestionnaire_id as string;
+  const gestionnaireId = automatisation.gestionnaire_id as string;
+  const parametres: ParametresAssistant = {
+    assistant_nom: automatisation.nom,
+    assistant_prompt: automatisation.prompt,
+    assistant_ton: automatisation.ton as ParametresAssistant["assistant_ton"],
+    outil_faq_actif: automatisation.outil_faq_actif,
+    outil_prise_rdv_actif: automatisation.outil_prise_rdv_actif,
+    outil_transfert_humain_actif: automatisation.outil_transfert_humain_actif,
+    outil_infos_pratiques_actif: automatisation.outil_infos_pratiques_actif,
+  };
 
   // Trouve ou crée le contact — n'importe quel numéro peut écrire,
   // jamais rejeté comme dans l'ancien produit.
@@ -187,67 +200,54 @@ export async function POST(request: NextRequest) {
     audio_url: audioUrl,
   });
 
-  if (!parametres.assistant_whatsapp_actif) {
+  if (automatisation.statut !== "actif") {
     console.error(
-      "[webhook] assistant_whatsapp_actif=false pour gestionnaire_id=",
+      "[webhook] automatisation.statut=",
+      automatisation.statut,
+      "pour automatisation_id=",
+      automatisation.id,
+      "gestionnaire_id=",
       gestionnaireId,
-      "— aucune réponse ne sera envoyée (comportement attendu si l'assistant est désactivé côté dashboard)."
+      "— aucune réponse ne sera envoyée (comportement attendu si cet assistant est désactivé côté dashboard)."
     );
     return twiml();
   }
 
-  // Vérifie la programmation horaire de l'automatisation "Assistant
-  // WhatsApp" de ce gestionnaire : si elle est active et qu'on est hors
-  // des jours/heures autorisés, on répond un message par défaut au lieu
-  // d'appeler GPT-4o.
-  const { data: automatisation, error: erreurAutomatisation } = await supabase
-    .from("automatisations")
-    .select("id")
-    .eq("gestionnaire_id", gestionnaireId)
-    .eq("type", "whatsapp")
+  // Vérifie la programmation horaire de CET assistant précis : si elle
+  // est active et qu'on est hors des jours/heures autorisés, on répond
+  // un message par défaut au lieu d'appeler GPT-4o.
+  const { data: programmation, error: erreurProgrammation } = await supabase
+    .from("programmations")
+    .select("jours_actifs, heure_debut, heure_fin, actif")
+    .eq("automatisation_id", automatisation.id)
     .maybeSingle();
 
-  if (erreurAutomatisation) {
+  if (erreurProgrammation) {
     console.error(
-      "[webhook] Échec de la lecture de l'automatisation 'whatsapp' pour gestionnaire_id=",
-      gestionnaireId,
+      "[webhook] Échec de la lecture de la programmation pour automatisation_id=",
+      automatisation.id,
       ":",
-      erreurAutomatisation
+      erreurProgrammation
     );
   }
 
-  if (automatisation) {
-    const { data: programmation, error: erreurProgrammation } = await supabase
-      .from("programmations")
-      .select("jours_actifs, heure_debut, heure_fin, actif")
-      .eq("automatisation_id", automatisation.id)
-      .maybeSingle();
-
-    if (erreurProgrammation) {
-      console.error(
-        "[webhook] Échec de la lecture de la programmation pour automatisation_id=",
-        automatisation.id,
-        ":",
-        erreurProgrammation
-      );
-    }
-
-    if (programmation && !estDansPlageAutorisee(programmation)) {
-      console.error(
-        "[webhook] Hors plage horaire autorisée pour gestionnaire_id=",
-        gestionnaireId,
-        "— envoi du message hors-horaires au lieu d'appeler l'assistant. programmation:",
-        programmation
-      );
-      await supabase.from("conversations_whatsapp").insert({
-        gestionnaire_id: gestionnaireId,
-        contact_id: contactId,
-        direction: "sortant",
-        type_message: "texte",
-        contenu: MESSAGE_HORS_HORAIRES,
-      });
-      return twiml(MESSAGE_HORS_HORAIRES);
-    }
+  if (programmation && !estDansPlageAutorisee(programmation)) {
+    console.error(
+      "[webhook] Hors plage horaire autorisée pour automatisation_id=",
+      automatisation.id,
+      "gestionnaire_id=",
+      gestionnaireId,
+      "— envoi du message hors-horaires au lieu d'appeler l'assistant. programmation:",
+      programmation
+    );
+    await supabase.from("conversations_whatsapp").insert({
+      gestionnaire_id: gestionnaireId,
+      contact_id: contactId,
+      direction: "sortant",
+      type_message: "texte",
+      contenu: MESSAGE_HORS_HORAIRES,
+    });
+    return twiml(MESSAGE_HORS_HORAIRES);
   }
 
   const { data: historique } = await supabase
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
   let reponse: string;
   try {
     reponse = await genererReponseAssistant(
-      parametres as unknown as ParametresAssistant,
+      parametres,
       contactNom,
       historiqueChronologique,
       { gestionnaireId, contactId, googleCalendarConnecte }
