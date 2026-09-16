@@ -19,10 +19,12 @@ const LABEL: Record<StatutAutomatisation, string> = {
 };
 
 // Bascule actif/inactif directement depuis l'admin — écrit dans
-// automatisations.statut ; le trigger existant (migration_002) synchronise
-// automatiquement parametres_compte.assistant_whatsapp_actif, rien de plus
-// à faire ici. Une automatisation en erreur ne peut être remise qu'à
-// "actif" (pas de retour arrière vers "erreur" depuis l'UI).
+// automatisations.statut, lu directement par le webhook pour CET
+// assistant précis (migration_018 a retiré la synchronisation vers
+// parametres_compte.assistant_whatsapp_actif, devenue incompatible avec
+// plusieurs assistants par gestionnaire). Une automatisation en erreur
+// ne peut être remise qu'à "actif" (pas de retour arrière vers "erreur"
+// depuis l'UI).
 export function AutomatisationToggleAdmin({
   automatisationId,
   gestionnaireId,

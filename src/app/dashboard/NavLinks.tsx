@@ -21,7 +21,7 @@ const LIENS: { href: string; label: string; icone: LucideIcon }[] = [
   { href: "/dashboard", label: "Vue d'ensemble", icone: LayoutDashboard },
   { href: "/dashboard/automatisations", label: "Automatisations", icone: Workflow },
   { href: "/dashboard/messages", label: "Historique de conversation", icone: MessageCircle },
-  { href: "/dashboard/whatsapp-ia", label: "Configuration assistant", icone: Bot },
+  { href: "/dashboard/assistants", label: "Assistants", icone: Bot },
   { href: "/dashboard/programmation", label: "Programmation", icone: CalendarClock },
   { href: "/dashboard/integrations", label: "Intégrations", icone: Plug },
   { href: "/dashboard/agenda", label: "Agenda", icone: Calendar },

@@ -77,12 +77,27 @@ export async function POST(request: Request) {
       ) {
         return erreur("Requête invalide.");
       }
-      // Le sens inverse (statut → assistant_whatsapp_actif) est déjà géré
-      // par le trigger existant (migration_002) : rien à faire de plus ici.
+      // automatisations.statut est la seule source de vérité pour l'état
+      // actif/inactif de cet assistant (migration_018) — rien d'autre à
+      // synchroniser.
       const { error: err } = await supabase
         .from("automatisations")
         .update({ statut: body.statut })
         .eq("id", body.automatisationId)
+        .eq("gestionnaire_id", body.gestionnaireId);
+      if (err) return erreur(err.message, 500);
+      return ok(undefined);
+    }
+
+    case "client.updateLimiteAssistants": {
+      if (!estString(body.gestionnaireId)) return erreur("Requête invalide.");
+      const limite = body.limiteAssistants;
+      if (typeof limite !== "number" || !Number.isInteger(limite) || limite < 1) {
+        return erreur("La limite doit être un nombre entier supérieur ou égal à 1.");
+      }
+      const { error: err } = await supabase
+        .from("parametres_compte")
+        .update({ limite_assistants: limite })
         .eq("gestionnaire_id", body.gestionnaireId);
       if (err) return erreur(err.message, 500);
       return ok(undefined);

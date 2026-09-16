@@ -4,10 +4,11 @@ import { useState } from "react";
 import { ecrireDashboard } from "@/lib/dashboard/ecrire";
 
 type ParametresAssistant = {
-  assistant_nom: string;
+  nom: string;
   langue: string;
-  assistant_prompt: string;
-  assistant_ton: "professionnel" | "amical" | "decontracte";
+  prompt: string;
+  ton: "professionnel" | "amical" | "decontracte";
+  numeroWhatsapp: string | null;
   outil_faq_actif: boolean;
   outil_prise_rdv_actif: boolean;
   outil_transfert_humain_actif: boolean;
@@ -29,19 +30,17 @@ const OUTILS_ACTIFS: {
 
 const OUTILS_A_VENIR = ["Calendly", "CRM AkilAI"];
 
-export function WhatsappIAForm({
-  numeroWhatsapp,
+export function AssistantConfigForm({
+  assistantId,
   googleCalendarConnecte,
   parametresInitiaux,
 }: {
-  numeroWhatsapp: string | null;
+  assistantId: string;
   googleCalendarConnecte: boolean;
   parametresInitiaux: ParametresAssistant;
 }) {
   const [parametres, setParametres] = useState(parametresInitiaux);
-  const [message, setMessage] = useState<{ type: "succes" | "erreur"; texte: string } | null>(
-    null
-  );
+  const [message, setMessage] = useState<{ type: "succes" | "erreur"; texte: string } | null>(null);
   const [chargement, setChargement] = useState(false);
 
   function set<K extends keyof ParametresAssistant>(cle: K, valeur: ParametresAssistant[K]) {
@@ -57,8 +56,12 @@ export function WhatsappIAForm({
     // /api/dashboard/write (service_role côté serveur), RLS-bloqué sinon
     // tant que le bypass est actif. Voir le commentaire en haut de cette
     // route API. gestionnaireId n'est pas transmis : le gestionnaire cible
-    // vient de getGestionnaireActuel() côté serveur.
-    const resultat = await ecrireDashboard("assistant.update", parametres);
+    // vient de getGestionnaireActuel() côté serveur, l'appartenance de cet
+    // assistant précis est revérifiée côté serveur via assistantId.
+    const resultat = await ecrireDashboard("assistant.updateConfig", {
+      id: assistantId,
+      ...parametres,
+    });
 
     setMessage(
       !resultat.ok
@@ -74,8 +77,8 @@ export function WhatsappIAForm({
         <label className="mb-1 block text-sm font-medium text-encre">Nom de l&apos;assistant</label>
         <input
           required
-          value={parametres.assistant_nom}
-          onChange={(e) => set("assistant_nom", e.target.value)}
+          value={parametres.nom}
+          onChange={(e) => set("nom", e.target.value)}
           className="w-full max-w-sm rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
         />
       </div>
@@ -97,8 +100,8 @@ export function WhatsappIAForm({
         <div>
           <label className="mb-1 block text-sm font-medium text-encre">Ton</label>
           <select
-            value={parametres.assistant_ton}
-            onChange={(e) => set("assistant_ton", e.target.value as ParametresAssistant["assistant_ton"])}
+            value={parametres.ton}
+            onChange={(e) => set("ton", e.target.value as ParametresAssistant["ton"])}
             className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
           >
             <option value="professionnel">Professionnel</option>
@@ -109,22 +112,23 @@ export function WhatsappIAForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-encre">Numéro Twilio</label>
-        <p className="w-full max-w-sm rounded-lg border border-bordure bg-sable px-3 py-2 text-sm text-texte-secondaire">
-          {numeroWhatsapp || "Non configuré"}
-        </p>
+        <label className="mb-1 block text-sm font-medium text-encre">Numéro WhatsApp (Twilio)</label>
+        <input
+          value={parametres.numeroWhatsapp ?? ""}
+          onChange={(e) => set("numeroWhatsapp", e.target.value || null)}
+          placeholder="whatsapp:+221..."
+          className="w-full max-w-sm rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
+        />
         <p className="mt-1 text-xs text-texte-secondaire">
-          Lecture seule ici — modifiable depuis Paramètres → Mon compte.
+          Doit être unique — c&apos;est ce numéro qui détermine quel assistant répond aux messages entrants.
         </p>
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-encre">
-          Prompt système
-        </label>
+        <label className="mb-1 block text-sm font-medium text-encre">Prompt système</label>
         <textarea
-          value={parametres.assistant_prompt}
-          onChange={(e) => set("assistant_prompt", e.target.value)}
+          value={parametres.prompt}
+          onChange={(e) => set("prompt", e.target.value)}
           rows={6}
           placeholder="Décris ton activité, ce que l'assistant doit savoir répondre, tes horaires, tes produits/services…"
           className="w-full rounded-lg border border-bordure px-3 py-2 text-sm outline-none focus:border-argile-forte"
@@ -177,9 +181,7 @@ export function WhatsappIAForm({
       </div>
 
       {message && (
-        <p className={`text-sm ${message.type === "erreur" ? "text-erreur" : "text-succes"}`}>
-          {message.texte}
-        </p>
+        <p className={`text-sm ${message.type === "erreur" ? "text-erreur" : "text-succes"}`}>{message.texte}</p>
       )}
 
       <button

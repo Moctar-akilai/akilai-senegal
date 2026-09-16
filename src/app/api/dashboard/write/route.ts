@@ -90,26 +90,98 @@ export async function POST(request: Request) {
       return ok(undefined);
     }
 
-    case "assistant.update": {
-      const ton = body.assistant_ton;
+    case "assistant.create": {
+      if (!estString(body.nom) || !body.nom.trim()) return erreur("Le nom est requis.");
+
+      // La limite est débloquée uniquement depuis le backoffice admin
+      // (parametres_compte.limite_assistants) — jamais autoréglable par le
+      // gestionnaire lui-même. Revérifiée ici côté serveur même si le
+      // bouton "+ Nouvel assistant" est déjà désactivé côté client une
+      // fois la limite atteinte.
+      const [{ count: nbAssistants }, { data: parametresCompte }] = await Promise.all([
+        supabase
+          .from("automatisations")
+          .select("id", { count: "exact", head: true })
+          .eq("gestionnaire_id", gestionnaire.id),
+        supabase
+          .from("parametres_compte")
+          .select("limite_assistants")
+          .eq("gestionnaire_id", gestionnaire.id)
+          .maybeSingle(),
+      ]);
+      const limite = parametresCompte?.limite_assistants ?? 1;
+      if ((nbAssistants ?? 0) >= limite) {
+        return erreur("Limite atteinte — contactez le support pour en débloquer davantage.");
+      }
+
+      const { data, error: err } = await supabase
+        .from("automatisations")
+        .insert({ gestionnaire_id: gestionnaire.id, nom: body.nom.trim(), type: "whatsapp", statut: "inactif" })
+        .select("id")
+        .single();
+      if (err || !data) return erreur(err?.message ?? "Impossible de créer l'assistant.", 500);
+      return ok({ id: data.id as string });
+    }
+
+    case "assistant.updateConfig": {
+      if (!estString(body.id)) return erreur("Requête invalide.");
+      const ton = body.ton;
       if (!TONS_ASSISTANT.includes(ton)) return erreur("Ton invalide.");
-      if (!estString(body.assistant_nom) || !estString(body.langue) || !estString(body.assistant_prompt)) {
+      if (!estString(body.nom) || !body.nom.trim() || !estString(body.langue)) {
         return erreur("Champs manquants.");
       }
+      const prompt = typeof body.prompt === "string" ? body.prompt : "";
+      const numeroWhatsapp =
+        body.numeroWhatsapp === null || body.numeroWhatsapp === undefined
+          ? null
+          : String(body.numeroWhatsapp).trim() || null;
+
+      // L'assistant ciblé doit appartenir au gestionnaire.
+      const { data: automatisation } = await supabase
+        .from("automatisations")
+        .select("id")
+        .eq("id", body.id)
+        .eq("gestionnaire_id", gestionnaire.id)
+        .maybeSingle();
+      if (!automatisation) return erreur("Assistant introuvable.", 404);
+
+      // Garde-fou §5 : un numéro WhatsApp doit être unique tous
+      // gestionnaires confondus, puisque c'est ce qui route les messages
+      // entrants (voir le webhook). La contrainte unique en base couvre
+      // déjà ce cas, mais on vérifie ici pour renvoyer un message clair
+      // plutôt qu'une erreur Postgres brute.
+      if (numeroWhatsapp) {
+        const { data: conflit } = await supabase
+          .from("automatisations")
+          .select("id")
+          .eq("numero_whatsapp", numeroWhatsapp)
+          .neq("id", body.id)
+          .maybeSingle();
+        if (conflit) return erreur("Ce numéro WhatsApp est déjà utilisé par un autre assistant.");
+      }
+
       const { error: err } = await supabase
-        .from("parametres_compte")
+        .from("automatisations")
         .update({
-          assistant_nom: body.assistant_nom,
+          nom: body.nom.trim(),
           langue: body.langue,
-          assistant_prompt: body.assistant_prompt,
-          assistant_ton: ton,
+          prompt,
+          ton,
+          numero_whatsapp: numeroWhatsapp,
           outil_faq_actif: Boolean(body.outil_faq_actif),
           outil_prise_rdv_actif: Boolean(body.outil_prise_rdv_actif),
           outil_transfert_humain_actif: Boolean(body.outil_transfert_humain_actif),
           outil_infos_pratiques_actif: Boolean(body.outil_infos_pratiques_actif),
         })
+        .eq("id", body.id)
         .eq("gestionnaire_id", gestionnaire.id);
-      if (err) return erreur(err.message, 500);
+      if (err) {
+        // Filet de sécurité si deux requêtes concurrentes passent la
+        // vérification ci-dessus en même temps — la contrainte unique en
+        // base tranche dans tous les cas.
+        if (err.code === "23505") return erreur("Ce numéro WhatsApp est déjà utilisé par un autre assistant.");
+        return erreur(err.message, 500);
+      }
       return ok(undefined);
     }
 
